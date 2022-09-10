@@ -3,7 +3,7 @@ cls
 
 rem Calibe Portable Update Backup Script v1
 rem This batch script will download the latest calibre portable installer, backup the current installation with 7zip, perform the update and finally delete the installer file.
-rem latest version can be found here https://github.com/DonGrobione/Calibre-Update-Backup-Script/blob/717c4d9f7c0da1aa42557f3bb5328eb927f14449/Calibre%20Update%20Backup.bat
+rem latest version can be found here https://github.com/DonGrobione/Calibre-Update-Backup-Script
 
 rem Var Definition, change as needed
 rem CalibreFolder - full path to Calibe Portable location
