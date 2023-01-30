@@ -22,7 +22,7 @@ echo
 rem Download latest Calibre update exe
 echo Download Upload file
 echo Downloading %CalibreInstaller%
-bitsadmin.exe /transfer "Calibre" https://calibre-ebook.com/dist/portable "%CalibreInstaller%"
+bitsadmin.exe /transfer "Calibre" /priority FOREGROUND https://calibre-ebook.com/dist/portable "%CalibreInstaller%"
 
 rem Backup Current Calibre with 7zip
 echo Create Backup
