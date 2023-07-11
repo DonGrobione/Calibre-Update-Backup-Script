@@ -27,7 +27,7 @@ bitsadmin.exe /transfer "Calibre" /priority FOREGROUND https://calibre-ebook.com
 rem Check is 7zip is installed and perform backup
 echo Create Backup
 if not exist "c:\Program Files\7-Zip\7z.exe" (
-    echo "Kein 7zip Installiert"
+    echo "c:\Program Files\7-Zip\7z.exe not found"
     pause
     exit /b 0
 ) else (
