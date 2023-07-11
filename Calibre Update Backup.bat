@@ -24,14 +24,19 @@ echo Download Upload file
 echo Downloading %CalibreInstaller%
 bitsadmin.exe /transfer "Calibre" /priority FOREGROUND https://calibre-ebook.com/dist/portable "%CalibreInstaller%"
 
-rem Backup Current Calibre with 7zip
+rem Check is 7zip is installed and perform backup
 echo Create Backup
-echo
-"c:\Program Files\7-Zip\7z.exe" a -mx9 -v4g -bsp2 %CalibreBackup% %CalibreFolder%
-rem a - create archive
-rem mx9 - maximum compression
-rem v4g - volume / file split after 4 GB
-rem bsp - verboste activity stream
+if not exist "c:\Program Files\7-Zip\7z.exe" (
+    echo "Kein 7zip Installiert"
+    pause
+    exit /b 0
+) else (
+    "c:\Program Files\7-Zip\7z.exe" a -mx9 -v1g -bsp2 %CalibreBackup% %CalibreFolder%
+    rem a - create archive
+    rem mx9 - maximum compression
+    rem v1g - volume / file split after 1 GB
+    rem bsp - verboste activity stream
+)
 
 rem Perform Update
 echo Updating Calibe Portable
