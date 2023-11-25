@@ -4,6 +4,8 @@ A simple script that will download the latest Calibre Portable update from https
 
 I set it up, that the archive volume will be split every 4 GB, as I use OneDrive and sometimes there are issues with big files and/or some corporate policies. If this does not apply to you, just remove that parameter.
 
+---------------------------------------
 
-[Calibre Update Backup.ps1](https://github.com/DonGrobione/Calibre-Update-Backup-Script/blob/main/Calibre%20Update%20Backup.ps1) is my current script. It will do the same as the old bat file, downloading the calibre update and creating a update. But it will change the path to the backup folder depending on oyu hostname. I am running this on several hosts and was to lazy to maintain several scripts.
+[Calibre Update Backup.ps1](https://github.com/DonGrobione/Calibre-Update-Backup-Script/blob/main/Calibre%20Update%20Backup.ps1) is my current script, which I use myself. Therefore you will need to change a few things, see comments for details.
+It will do much the same as the old bat file, downloading the calibre update and creating a update. But it will change the path to the backup folder depending on the hostname. I am running this on several hosts and was to lazy to maintain several scripts.
 Finally it will check your backup path and will only keep the latest three backups.
