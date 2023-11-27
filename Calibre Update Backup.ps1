@@ -1,17 +1,17 @@
 <#
 .SYNOPSIS
     This scrtipt will check the hostname and depening on it, will chnage the path where the backups will be saved.
-    It will asume your Library is a subfolder in Calibre and compress everything using 7zip in 1 GB archives.
-    Calibe update will be downloaded in tmp and applied to Clibre.
+    It will asume your Library is a subfolder in Calibre Portable and compress everything using 7zip in 1 GB archives.
+    Update will be downloaded in tmp and applied to Calibre Portable.
     Finally the update file will be deleted and then the script will check past backups and only keps the latest 3.
+    To prevent errors during update, OneDrive will be temporarly stopped.
 
 .DESCRIPTION
 This file is the cript I use myself, hence you will need to change a few things around. Especially the function DefineBackupPath and the variable CalibreFolder.
 
 .NOTES
     Created by DonGrobione
-    https://github.com/DonGrobione/Calibre-Update-Backup-Script
-
+    Latest version can be found at https://github.com/DonGrobione/Calibre-Update-Backup-Script
 #>
 
 ##  Definition of variables, change as needed
@@ -142,7 +142,6 @@ function VarDebug {
     Write-Host "OneDrivePath: $OneDrivePath"
     Start-Sleep -Seconds 5
 }
-
 function OneDriveStop {
     # Check each potential Onedrive path and define OneDrivePath
     Write-Host "Checking for OneDrive installation"
