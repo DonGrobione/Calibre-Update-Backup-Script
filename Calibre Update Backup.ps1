@@ -34,6 +34,17 @@ New-Variable -Name Date -Value (Get-Date).ToString("yyyy-MM-dd") -Scope script
 # Define number of backup datasets to be kept in $CalibreBackup. Only the latest n set will be kept.
 New-Variable -Name CalibreBackupRetention -Value "3" -Scope script
 
+# Define potential OneDrive installation paths
+New-Variable -Name "OneDrivePotentialPaths" -Value @(
+    "${env:ProgramFiles}\Microsoft OneDrive\OneDrive.exe",
+    "${env:ProgramFiles(x86)}\Microsoft OneDrive\OneDrive.exe",
+    "${env:LocalAppData}\Microsoft\OneDrive\OneDrive.exe",
+    "${env:WinDir}\SysWOW64\OneDriveSetup.exe"
+) -Scope script
+
+# Initialize OneDrivePath variable
+New-Variable -Name "OneDrivePath" -Value $null -Scope script
+
 ## Functions
 function DefineBackupPath {
     <#
@@ -127,16 +138,48 @@ function VarDebug {
     Write-Host "7zipPath: $7zipPath"
     Write-Host "COMPUTERNAME: $env:COMPUTERNAME"
     Write-Host "CalibreBackupRetention: $CalibreBackupRetention"
+    Write-Host "OneDrivePotentialPaths: $OneDrivePotentialPaths"
+    Write-Host "OneDrivePath: $OneDrivePath"
     Start-Sleep -Seconds 5
+}
+
+function OneDriveStop {
+    # Check each potential Onedrive path and define OneDrivePath
+    Write-Host "Checking for OneDrive installation"
+    foreach ($path in $OneDrivePotentialPaths) {
+        if (Test-Path $path) {
+            $OneDrivePath = $path
+            break
+        }
+    }
+    
+    # If OneDrivePath is not null, stop OneDrive
+    if ($OneDrivePath -ne $null) {
+        Write-Host "OneDrive found at $OneDrivePath. Stopping and starting OneDrive..."
+    
+        # Stop OneDrive
+        Stop-Process -Name "OneDrive"
+
+    }
+    else {
+        Write-Host "OneDrive not found in any of the potential paths."
+    }
+}
+
+function OneDriveStart {
+    # Start OneDrive
+    Start-Process -FilePath $OneDrivePath
 }
 
 ## Execution
 # VarDebug is commented out by default, as it is used to check if variables are set correctly
-#Clear-Host
+Clear-Host
 DefineBackupPath
 CalibreUpdateDownload
 CalibreBackup
+OneDriveStop
 CalibreUpdate
+OneDriveStart
 UpdateCleanup
 BackupCleanup
 #VarDebug
