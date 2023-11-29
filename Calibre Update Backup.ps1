@@ -93,13 +93,13 @@ function CalibreBackup {
 function CalibreUpdate {
     Write-Host "Starting Calibre Update"
     Set-Alias Start-CalibreUpdateExe $CalibreInstaller
-    Start-CalibreUpdateExe $CalibreFolder    
+    Start-CalibreUpdateExe $CalibreFolder
 }
 
 function UpdateCleanup {
     # Deleteing update file
     Write-Host "Deleting update file"
-    Remove-Item -Path $CalibreInstaller    
+    Remove-Item -Path $CalibreInstaller
 }
 
 function BackupCleanup {
