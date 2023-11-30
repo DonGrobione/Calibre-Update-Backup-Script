@@ -154,7 +154,7 @@ function OneDriveStop {
     
     # If OneDrivePath is not null, stop OneDrive
     if ($OneDrivePath -ne $null) {
-        Write-Host "OneDrive found at $OneDrivePath. Stopping and starting OneDrive..."
+        Write-Host "OneDrive found at $OneDrivePath. Stopping OneDrive..."
     
         # Stop OneDrive
         Stop-Process -Name "OneDrive"
@@ -167,6 +167,7 @@ function OneDriveStop {
 
 function OneDriveStart {
     # Start OneDrive
+    Write-Host "Starting OneDrive"
     Start-Process -FilePath $OneDrivePath
 }
 
