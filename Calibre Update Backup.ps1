@@ -48,19 +48,19 @@ New-Variable -Name "OneDrivePath" -Value $null -Scope script
 ## Functions
 function DefineBackupPath {
     <#
-    Function that will change CalibreBackup depending on the hostname.
+    Function that will change CalibreBackupPath depending on the hostname.
     Change env:COMPUTERNAME to the hostnam of your host and CalibreBackup to the path where the backup will be saved.
     #>
-    New-Variable -Name CalibreBackup
+    New-Variable -Name CalibreBackupPath
     if ($env:COMPUTERNAME -match "DONGROBIONE-PC") {
-        Set-Variable CalibreBackup -Value "D:\HiDrive\HiDrive\Backup\Calibre\CalibrePortableBackup_$Date" -Scope script
+        Set-Variable CalibreBackupPath -Value "D:\HiDrive\HiDrive\Backup\Calibre\CalibrePortableBackup_$Date" -Scope script
     }
     elseif ($env:COMPUTERNAME -match "DESKTOP-GS7HB29") {
-        Set-Variable -Name CalibreBackup -Value "E:\HiDrive\Backup\Calibre\CalibrePortableBackup_$Date" -Scope script
+        Set-Variable -Name CalibreBackupPath -Value "E:\HiDrive\Backup\Calibre\CalibrePortableBackup_$Date" -Scope script
     }
     else {
         Write-Host "Hostname $env:COMPUTERNAME not configured."
-        Write-Host "CalibreBackup not set."
+        Write-Host "CalibreBackupPath not set."
         Start-Sleep -Seconds 5
         Exit-PSSession 
     }    
@@ -80,7 +80,7 @@ function CalibreBackup {
         v1g - volume / file split after 1 GB
         bsp - verboste activity stream 
         #>
-        Start-SevenZip a -mx9 -v1g -bsp2 $CalibreBackup $CalibreFolder
+        Start-SevenZip a -mx9 -v1g -bsp2 $CalibreBackupPath $CalibreFolder
     }
     else {
         Write-Host "7zip installation path not found"
@@ -104,8 +104,8 @@ function UpdateCleanup {
 
 function BackupCleanup {
     Write-Host "Cleanup of old backups"
-    # List all files in $CalibreBackup
-    $files = Get-ChildItem -Path $CalibreBackup -Filter "CalibrePortableBackup_*.7z.*"
+    # List all files in $CalibreBackupPath
+    $files = Get-ChildItem -Path $CalibreBackupPath -Filter "CalibrePortableBackup_*.7z.*"
 
     # Sort files by date
     $sortedFiles = $files | Sort-Object {
@@ -133,7 +133,7 @@ function VarDebug {
     Write-Host "Date: $Date"
     Write-Host "CalibreFolder: $CalibreFolder"
     Write-Host "CalibreInstaller: $CalibreInstaller"
-    Write-Host "CalibreBackup: $CalibreBackup"
+    Write-Host "CalibreBackupPath: $CalibreBackupPath"
     Write-Host "CalibreUpdateSource: $CalibreUpdateSource"
     Write-Host "7zipPath: $7zipPath"
     Write-Host "COMPUTERNAME: $env:COMPUTERNAME"
