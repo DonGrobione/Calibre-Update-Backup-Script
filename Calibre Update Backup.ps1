@@ -25,7 +25,7 @@ New-Variable -Name CalibreUpdateSource -Value "https://calibre-ebook.com/dist/po
 New-Variable -Name CalibreInstaller -Value "$env:TEMP\calibre-portable-installer.exe" -Scope script
 
 # 7zip binariy
-New-Variable -Name 7zipPath -Value "c:\Program Files\7-Zip\7z.exe" -Scope script
+New-Variable -Name 7zipPath -Value "$env:ProgramFiles\7-Zip\7z.exe" -Scope script
 Set-Alias Start-SevenZip $7zipPath -Scope script
 
 # Define Date sting in YYYY-MM-DD format for filename
