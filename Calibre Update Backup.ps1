@@ -62,10 +62,10 @@ function DefineBackupPath {
     #>
     New-Variable -Name CalibreBackupPath
     if ($env:COMPUTERNAME -match "DONGROBIONE-PC") {
-        Set-Variable CalibreBackupPath -Value "D:\HiDrive\HiDrive\Backup\Calibre\CalibrePortableBackup_$Date" -Scope script
+        Set-Variable CalibreBackupPath -Value "D:\HiDrive\HiDrive\Backup\Calibre\" -Scope script
     }
     elseif ($env:COMPUTERNAME -match "DESKTOP-GS7HB29") {
-        Set-Variable -Name CalibreBackupPath -Value "E:\HiDrive\Backup\Calibre\CalibrePortableBackup_$Date" -Scope script
+        Set-Variable -Name CalibreBackupPath -Value "E:\HiDrive\Backup\Calibre\" -Scope script
     }
     else {
         Write-Host "Hostname $env:COMPUTERNAME not configured."
@@ -89,7 +89,7 @@ function CalibreBackup {
         v1g - volume / file split after 1 GB
         bsp - verboste activity stream 
         #>
-        Start-SevenZip a -mx9 -v1g -bsp2 $CalibreBackupPath $CalibreFolder
+        Start-SevenZip a -mx9 -v1g -bsp2 "$CalibreBackupPath\CalibrePortableBackup_$Date" $CalibreFolder
     }
     else {
         Write-Host "7zip installation path not found"
