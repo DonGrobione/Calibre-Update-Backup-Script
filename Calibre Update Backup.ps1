@@ -45,6 +45,15 @@ New-Variable -Name "OneDrivePotentialPaths" -Value @(
 # Initialize OneDrivePath variable
 New-Variable -Name "OneDrivePath" -Value $null -Scope script
 
+# Check each potential Onedrive path and define OneDrivePath
+Write-Host "Checking for OneDrive installation"
+foreach ($path in $OneDrivePotentialPaths) {
+    if (Test-Path $path) {
+        Set-Variable -Name "OneDrivePath" -Value "$path"
+        break
+    }
+}
+
 ## Functions
 function DefineBackupPath {
     <#
@@ -141,24 +150,13 @@ function VarDebug {
     Write-Host "OneDrivePotentialPaths: $OneDrivePotentialPaths"
     Write-Host "OneDrivePath: $OneDrivePath"
     Start-Sleep -Seconds 5
-}
-function OneDriveStop {
-    # Check each potential Onedrive path and define OneDrivePath
-    Write-Host "Checking for OneDrive installation"
-    foreach ($path in $OneDrivePotentialPaths) {
-        if (Test-Path $path) {
-            $OneDrivePath = $path
-            break
-        }
-    }
-    
+
+}function OneDriveStop {
     # If OneDrivePath is not null, stop OneDrive
     if ($OneDrivePath -ne $null) {
         Write-Host "OneDrive found at $OneDrivePath. Stopping OneDrive..."
-    
         # Stop OneDrive
         Stop-Process -Name "OneDrive"
-
     }
     else {
         Write-Host "OneDrive not found in any of the potential paths."
@@ -182,4 +180,3 @@ CalibreUpdate
 OneDriveStart
 UpdateCleanup
 BackupCleanup
-#VarDebug
