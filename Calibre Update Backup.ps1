@@ -7,7 +7,7 @@
     To prevent errors during update, OneDrive will be temporarly stopped.
 
 .DESCRIPTION
-This file is the cript I use myself, hence you will need to change a few things around. Especially the function DefineBackupPath and the variable CalibreFolder.
+This file is the script I use myself, hence you will need to change a few things around. Especially the function DefineBackupPath and the variable CalibreFolder.
 
 .NOTES
     Created by DonGrobione
