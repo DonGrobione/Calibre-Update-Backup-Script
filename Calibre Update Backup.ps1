@@ -14,6 +14,9 @@ This file is the script I use myself, hence you will need to change a few things
     Latest version can be found at https://github.com/DonGrobione/Calibre-Update-Backup-Script
 #>
 
+# Start PS logging
+Start-Transcript -Path "$env:TEMP\Calibre-Backup-Update.log"
+
 ##  Definition of variables, change as needed
 # Path to Calibre Portable in my OneDrive
 New-Variable -Name CalibreFolder -Value "$env:OneDrive\PortableApps\Calibre Portable" -Scope script
@@ -180,3 +183,6 @@ CalibreUpdate
 OneDriveStart
 UpdateCleanup
 BackupCleanup
+
+#Stop PS Logging
+Stop-Transcript
