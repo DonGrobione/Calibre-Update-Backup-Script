@@ -15,7 +15,7 @@ This file is the script I use myself, hence you will need to change a few things
 #>
 
 # Start PS logging
-Start-Transcript -Path "$env:TEMP\Calibre-Backup-Update.log"
+Start-Transcript -Path "$env:TEMP\Calibre-Backup-Update.log" -IncludeInvocationHeader
 
 ##  Definition of variables, change as needed
 # Path to Calibre Portable in my OneDrive
@@ -49,7 +49,7 @@ New-Variable -Name "OneDrivePotentialPaths" -Value @(
 New-Variable -Name "OneDrivePath" -Value $null -Scope script
 
 # Check each potential Onedrive path and define OneDrivePath
-Write-Host "Checking for OneDrive installation"
+Write-Output "Checking for OneDrive installation"
 foreach ($path in $OneDrivePotentialPaths) {
     if (Test-Path $path) {
         Set-Variable -Name "OneDrivePath" -Value "$path"
@@ -71,21 +71,21 @@ function DefineBackupPath {
         Set-Variable -Name CalibreBackupPath -Value "E:\HiDrive\Backup\Calibre\" -Scope script
     }
     else {
-        Write-Host "Hostname $env:COMPUTERNAME not configured."
-        Write-Host "CalibreBackupPath not set."
+        Write-Output "Hostname $env:COMPUTERNAME not configured."
+        Write-Output "CalibreBackupPath not set."
         Start-Sleep -Seconds 5
         Exit-PSSession 
     }    
 }
 
 function CalibreUpdateDownload {
-    Write-Host "Starting download of Calibre update file"
+    Write-Output "Starting download of Calibre update file"
     Start-BitsTransfer -Source $CalibreUpdateSource -Destination $CalibreInstaller  
 }
 
 function CalibreBackup {
     if (Test-Path -Path $7zipPath -PathType Leaf) {
-        Write-Host "7zip found, starting backup"
+        Write-Output "7zip found, starting backup"
         <#
         a - create archive
         mx9 - maximum compression
@@ -95,27 +95,27 @@ function CalibreBackup {
         Start-SevenZip a -mx9 -v1g -bsp2 "$CalibreBackupPath\CalibrePortableBackup_$Date" $CalibreFolder
     }
     else {
-        Write-Host "7zip installation path not found"
-        Write-Host "$7zipPath"
+        Write-Output "7zip installation path not found"
+        Write-Output "$7zipPath"
         Start-Sleep -Seconds 5
         Exit-PSSession 
     }    
 }
 
 function CalibreUpdate {
-    Write-Host "Starting Calibre Update"
+    Write-Output "Starting Calibre Update"
     Set-Alias Start-CalibreUpdateExe $CalibreInstaller
     Start-CalibreUpdateExe $CalibreFolder
 }
 
 function UpdateCleanup {
     # Deleteing update file
-    Write-Host "Deleting update file"
+    Write-Output "Deleting update file"
     Remove-Item -Path $CalibreInstaller
 }
 
 function BackupCleanup {
-    Write-Host "Cleanup of old backups"
+    Write-Output "Cleanup of old backups"
     # List all files in $CalibreBackupPath
     $files = Get-ChildItem -Path $CalibreBackupPath -Filter "CalibrePortableBackup_*.7z.*"
 
@@ -142,33 +142,33 @@ function BackupCleanup {
 }
 
 function VarDebug {
-    Write-Host "Date: $Date"
-    Write-Host "CalibreFolder: $CalibreFolder"
-    Write-Host "CalibreInstaller: $CalibreInstaller"
-    Write-Host "CalibreBackupPath: $CalibreBackupPath"
-    Write-Host "CalibreUpdateSource: $CalibreUpdateSource"
-    Write-Host "7zipPath: $7zipPath"
-    Write-Host "COMPUTERNAME: $env:COMPUTERNAME"
-    Write-Host "CalibreBackupRetention: $CalibreBackupRetention"
-    Write-Host "OneDrivePotentialPaths: $OneDrivePotentialPaths"
-    Write-Host "OneDrivePath: $OneDrivePath"
+    Write-Output "Date: $Date"
+    Write-Output "CalibreFolder: $CalibreFolder"
+    Write-Output "CalibreInstaller: $CalibreInstaller"
+    Write-Output "CalibreBackupPath: $CalibreBackupPath"
+    Write-Output "CalibreUpdateSource: $CalibreUpdateSource"
+    Write-Output "7zipPath: $7zipPath"
+    Write-Output "COMPUTERNAME: $env:COMPUTERNAME"
+    Write-Output "CalibreBackupRetention: $CalibreBackupRetention"
+    Write-Output "OneDrivePotentialPaths: $OneDrivePotentialPaths"
+    Write-Output "OneDrivePath: $OneDrivePath"
     Start-Sleep -Seconds 5
 
 }function OneDriveStop {
     # If OneDrivePath is not null, stop OneDrive
     if ($OneDrivePath -ne $null) {
-        Write-Host "OneDrive found at $OneDrivePath. Stopping OneDrive..."
+        Write-Output "OneDrive found at $OneDrivePath. Stopping OneDrive..."
         # Stop OneDrive
         Stop-Process -Name "OneDrive"
     }
     else {
-        Write-Host "OneDrive not found in any of the potential paths."
+        Write-Output "OneDrive not found in any of the potential paths."
     }
 }
 
 function OneDriveStart {
     # Start OneDrive
-    Write-Host "Starting OneDrive"
+    Write-Output "Starting OneDrive"
     Start-Process -FilePath $OneDrivePath
 }
 
