@@ -95,6 +95,7 @@ function CalibreBackup {
         v1g - volume / file split after 1 GB
         bsp - verboste activity stream 
         #>
+        Write-Output "Creating Backups $CalibreBackupPath\CalibrePortableBackup_$Date."
         Start-SevenZip a -mx9 -v1g -bsp2 "$CalibreBackupPath\CalibrePortableBackup_$Date" $CalibreFolder
     }
     else {
@@ -138,6 +139,8 @@ function BackupCleanup {
     if ($groupedFiles.Count -gt $CalibreBackupRetention) {
         $groupedFiles | Select-Object -First ($groupedFiles.Count - 3) | ForEach-Object {
             $_.Group | ForEach-Object {
+                Write-Output "Deleting old backup files:"
+                Write-Output "$_.FullName"
                 Remove-Item -Path $_.FullName -Force
             }
         }
@@ -179,12 +182,12 @@ function OneDriveStart {
 Clear-Host
 DefineBackupPath
 CalibreUpdateDownload
-#CalibreBackup
-#OneDriveStop
-#CalibreUpdate
-#OneDriveStart
+CalibreBackup
+OneDriveStop
+CalibreUpdate
+OneDriveStart
 UpdateCleanup
-#BackupCleanup
+BackupCleanup
 
 #Stop PS Logging
 Stop-Transcript
