@@ -156,7 +156,7 @@ function VarDebug {
 
 }function OneDriveStop {
     # If OneDrivePath is not null, stop OneDrive
-    if ($OneDrivePath -ne $null) {
+    if ($null -ne $OneDrivePath) {
         Write-Output "OneDrive found at $OneDrivePath. Stopping OneDrive..."
         # Stop OneDrive
         Stop-Process -Name "OneDrive"
