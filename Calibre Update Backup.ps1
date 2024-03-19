@@ -53,6 +53,7 @@ Write-Output "Checking for OneDrive installation"
 foreach ($path in $OneDrivePotentialPaths) {
     if (Test-Path $path) {
         Set-Variable -Name "OneDrivePath" -Value "$path"
+        Write-Output "Onedrive found in $OneDrivePath"
         break
     }
 }
@@ -65,10 +66,12 @@ function DefineBackupPath {
     #>
     New-Variable -Name CalibreBackupPath
     if ($env:COMPUTERNAME -match "DONGROBIONE-PC") {
-        Set-Variable CalibreBackupPath -Value "D:\HiDrive\HiDrive\Backup\Calibre\" -Scope script
+        Set-Variable CalibreBackupPath -Value "D:\HiDrive\HiDrive\Backup\Calibre\"
+        Write-Output "Calibe found in $CalibreBackupPath"
     }
     elseif ($env:COMPUTERNAME -match "DESKTOP-GS7HB29") {
-        Set-Variable -Name CalibreBackupPath -Value "E:\HiDrive\Backup\Calibre\" -Scope script
+        Set-Variable -Name CalibreBackupPath -Value "E:\HiDrive\Backup\Calibre\"
+        Write-Output "Calibe found in $CalibreBackupPath"
     }
     else {
         Write-Output "Hostname $env:COMPUTERNAME not configured."
@@ -79,13 +82,13 @@ function DefineBackupPath {
 }
 
 function CalibreUpdateDownload {
-    Write-Output "Starting download of Calibre update file"
-    Start-BitsTransfer -Source $CalibreUpdateSource -Destination $CalibreInstaller  
+    Write-Output "Starting download from $CalibreUpdateSource to $CalibreInstaller"
+    Start-BitsTransfer -Source $CalibreUpdateSource -Destination $CalibreInstaller -Priority Foreground
 }
 
 function CalibreBackup {
     if (Test-Path -Path $7zipPath -PathType Leaf) {
-        Write-Output "7zip found, starting backup"
+        Write-Output "7zip found in $7zipPath, starting backup"
         <#
         a - create archive
         mx9 - maximum compression
@@ -96,26 +99,26 @@ function CalibreBackup {
     }
     else {
         Write-Output "7zip installation path not found"
-        Write-Output "$7zipPath"
         Start-Sleep -Seconds 5
-        Exit-PSSession 
+        #Exit-PSSession
+        break
     }    
 }
 
 function CalibreUpdate {
-    Write-Output "Starting Calibre Update"
+    Write-Output "Starting Calibre Update $CalibreInstaller"
     Set-Alias Start-CalibreUpdateExe $CalibreInstaller
     Start-CalibreUpdateExe $CalibreFolder
 }
 
 function UpdateCleanup {
     # Deleteing update file
-    Write-Output "Deleting update file"
+    Write-Output "Deleting update file $CalibreInstaller"
     Remove-Item -Path $CalibreInstaller
 }
 
 function BackupCleanup {
-    Write-Output "Cleanup of old backups"
+    Write-Output "Cleanup of old backups in $CalibreBackupPath"
     # List all files in $CalibreBackupPath
     $files = Get-ChildItem -Path $CalibreBackupPath -Filter "CalibrePortableBackup_*.7z.*"
 
@@ -157,8 +160,7 @@ function VarDebug {
 }function OneDriveStop {
     # If OneDrivePath is not null, stop OneDrive
     if ($null -ne $OneDrivePath) {
-        Write-Output "OneDrive found at $OneDrivePath. Stopping OneDrive..."
-        # Stop OneDrive
+        Write-Output "OneDrive found at $OneDrivePath. Stopping OneDrive Service."
         Stop-Process -Name "OneDrive"
     }
     else {
@@ -168,7 +170,7 @@ function VarDebug {
 
 function OneDriveStart {
     # Start OneDrive
-    Write-Output "Starting OneDrive"
+    Write-Output "Starting OneDrive in $OneDrivePath"
     Start-Process -FilePath $OneDrivePath
 }
 
@@ -177,12 +179,12 @@ function OneDriveStart {
 Clear-Host
 DefineBackupPath
 CalibreUpdateDownload
-CalibreBackup
-OneDriveStop
-CalibreUpdate
-OneDriveStart
+#CalibreBackup
+#OneDriveStop
+#CalibreUpdate
+#OneDriveStart
 UpdateCleanup
-BackupCleanup
+#BackupCleanup
 
 #Stop PS Logging
 Stop-Transcript
