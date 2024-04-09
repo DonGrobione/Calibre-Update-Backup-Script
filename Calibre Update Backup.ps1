@@ -37,6 +37,9 @@ New-Variable -Name Date -Value (Get-Date).ToString("yyyy-MM-dd") -Scope script
 # Define number of backup datasets to be kept in $CalibreBackup. Only the latest n set will be kept.
 New-Variable -Name CalibreBackupRetention -Value "3" -Scope script
 
+# Variable for the path the backup files, will be set in the DefineBackupPath function
+New-Variable -Name CalibreBackupPath -Value $null -Scope script
+
 # Define potential OneDrive installation paths
 New-Variable -Name "OneDrivePotentialPaths" -Value @(
     "${env:ProgramFiles}\Microsoft OneDrive\OneDrive.exe",
@@ -58,28 +61,47 @@ foreach ($path in $OneDrivePotentialPaths) {
     }
 }
 
-## Functions
-function DefineBackupPath {
-    <#
-    Function that will change CalibreBackupPath depending on the hostname.
-    Change env:COMPUTERNAME to the hostnam of your host and CalibreBackup to the path where the backup will be saved.
-    #>
-    New-Variable -Name CalibreBackupPath
-    if ($env:COMPUTERNAME -match "DONGROBIONE-PC") {
-        Set-Variable CalibreBackupPath -Value "D:\HiDrive\HiDrive\Backup\Calibre\"
-        Write-Output "Calibe found in $CalibreBackupPath"
-    }
-    elseif ($env:COMPUTERNAME -match "DESKTOP-GS7HB29") {
-        Set-Variable -Name CalibreBackupPath -Value "E:\HiDrive\Backup\Calibre\"
-        Write-Output "Calibe found in $CalibreBackupPath"
-    }
-    else {
-        Write-Output "Hostname $env:COMPUTERNAME not configured."
-        Write-Output "CalibreBackupPath not set."
-        Start-Sleep -Seconds 5
-        Exit-PSSession 
-    }    
+<#
+Function that will change CalibreBackupPath depending on the hostname.
+Change env:COMPUTERNAME to the hostnam of your host and CalibreBackup to the path where the backup will be saved.
+#>
+if ($env:COMPUTERNAME -match "DONGROBIONE-PC") {
+    Set-Variable CalibreBackupPath -Value "D:\HiDrive\HiDrive\Backup\Calibre\"
+    Write-Output "Calibe backups found in $CalibreBackupPath"
 }
+elseif ($env:COMPUTERNAME -match "DESKTOP-GS7HB29") {
+    Set-Variable -Name CalibreBackupPath -Value "E:\HiDrive\Backup\Calibre\"
+    Write-Output "Calibe backups found in $CalibreBackupPath"
+}
+else {
+    Write-Output "Hostname $env:COMPUTERNAME not configured."
+    Write-Output "CalibreBackupPath not set."
+    Start-Sleep -Seconds 5
+    Exit-PSSession 
+}
+
+
+## Functions
+#function DefineBackupPath {
+#    <#
+#    Function that will change CalibreBackupPath depending on the hostname.
+#    Change env:COMPUTERNAME to the hostnam of your host and CalibreBackup to the path where the backup will be saved.
+#    #>
+#    if ($env:COMPUTERNAME -match "DONGROBIONE-PC") {
+#        Set-Variable CalibreBackupPath -Value "D:\HiDrive\HiDrive\Backup\Calibre\"
+#        Write-Output "Calibe backups found in $CalibreBackupPath"
+#    }
+#    elseif ($env:COMPUTERNAME -match "DESKTOP-GS7HB29") {
+#        Set-Variable -Name CalibreBackupPath -Value "E:\HiDrive\Backup\Calibre\"
+#        Write-Output "Calibe backups found in $CalibreBackupPath"
+#    }
+#    else {
+#        Write-Output "Hostname $env:COMPUTERNAME not configured."
+#        Write-Output "CalibreBackupPath not set."
+#        Start-Sleep -Seconds 5
+#        Exit-PSSession 
+#    }    
+#}
 
 function CalibreUpdateDownload {
     Write-Output "Starting download from $CalibreUpdateSource to $CalibreInstaller"
@@ -180,7 +202,7 @@ function OneDriveStart {
 ## Execution
 # VarDebug is commented out by default, as it is used to check if variables are set correctly
 Clear-Host
-DefineBackupPath
+#DefineBackupPath
 CalibreUpdateDownload
 CalibreBackup
 OneDriveStop
