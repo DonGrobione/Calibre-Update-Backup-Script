@@ -66,7 +66,7 @@ Function that will change CalibreBackupPath depending on the hostname.
 Change env:COMPUTERNAME to the hostnam of your host and CalibreBackup to the path where the backup will be saved.
 #>
 if ($env:COMPUTERNAME -match "DONGROBIONE-PC") {
-    Set-Variable CalibreBackupPath -Value "D:\HiDrive\HiDrive\Backup\Calibre\"
+    Set-Variable CalibreBackupPath -Value "D:\HiDrive\Backup\Calibre\"
     Write-Output "Calibe backups found in $CalibreBackupPath"
 }
 elseif ($env:COMPUTERNAME -match "DESKTOP-GS7HB29") {
