@@ -132,6 +132,7 @@ function CalibreUpdate {
     Write-Output "Starting Calibre Update $CalibreInstaller"
     Set-Alias Start-CalibreUpdateExe $CalibreInstaller
     Start-CalibreUpdateExe $CalibreFolder
+    Start-Sleep -Seconds 30
 }
 
 function UpdateCleanup {
