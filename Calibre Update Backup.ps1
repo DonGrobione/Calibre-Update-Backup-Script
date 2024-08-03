@@ -40,27 +40,6 @@ New-Variable -Name CalibreBackupRetention -Value "3" -Scope script
 # Variable for the path the backup files, will be set in the DefineBackupPath function
 New-Variable -Name CalibreBackupPath -Value $null -Scope script
 
-# Define potential OneDrive installation paths
-New-Variable -Name "OneDrivePotentialPaths" -Value @(
-    "${env:ProgramFiles}\Microsoft OneDrive\OneDrive.exe",
-    "${env:ProgramFiles(x86)}\Microsoft OneDrive\OneDrive.exe",
-    "${env:LocalAppData}\Microsoft\OneDrive\OneDrive.exe",
-    "${env:WinDir}\SysWOW64\OneDriveSetup.exe"
-) -Scope script
-
-# Initialize OneDrivePath variable
-New-Variable -Name "OneDrivePath" -Value $null -Scope script
-
-# Check each potential Onedrive path and define OneDrivePath
-Write-Output "Checking for OneDrive installation"
-foreach ($path in $OneDrivePotentialPaths) {
-    if (Test-Path $path) {
-        Set-Variable -Name "OneDrivePath" -Value "$path"
-        Write-Output "Onedrive found in $OneDrivePath"
-        break
-    }
-}
-
 <#
 Function that will change CalibreBackupPath depending on the hostname.
 Change env:COMPUTERNAME to the hostnam of your host and CalibreBackup to the path where the backup will be saved.
@@ -129,10 +108,20 @@ function CalibreBackup {
 }
 
 function CalibreUpdate {
+    # Check if OneDrive process is running and stop it. This will prevent errors during Calibre Update.
+    $OneDriveProcess = Get-Process -Name "OneDrive" -ErrorAction SilentlyContinue
+    if ($OneDriveProcess) {
+        Write-Output "Stopping OneDrive process."
+        Stop-Process -Name "OneDrive" -Force -Verbose
+    }
+    else {
+        Write-Output "OneDrive not running."
+    }
+
     Write-Output "Starting Calibre Update $CalibreInstaller"
     Set-Alias Start-CalibreUpdateExe $CalibreInstaller
     Start-CalibreUpdateExe $CalibreFolder
-    Start-Sleep -Seconds 30
+    Start-Sleep -Seconds 40
 }
 
 function UpdateCleanup {
@@ -182,19 +171,30 @@ function VarDebug {
     Write-Output "OneDrivePotentialPaths: $OneDrivePotentialPaths"
     Write-Output "OneDrivePath: $OneDrivePath"
     Start-Sleep -Seconds 5
-
-}function OneDriveStop {
-    # If OneDrivePath is not null, stop OneDrive
-    if ($null -ne $OneDrivePath) {
-        Write-Output "OneDrive found at $OneDrivePath. Stopping OneDrive Service."
-        Stop-Process -Name "OneDrive"
-    }
-    else {
-        Write-Output "OneDrive not found in any of the potential paths."
-    }
 }
 
 function OneDriveStart {
+    # Define potential OneDrive installation paths
+    $OneDrivePotentialPaths = @(
+        "${env:ProgramFiles}\Microsoft OneDrive\OneDrive.exe",
+        "${env:ProgramFiles(x86)}\Microsoft OneDrive\OneDrive.exe",
+        "${env:LocalAppData}\Microsoft\OneDrive\OneDrive.exe",
+        "${env:WinDir}\SysWOW64\OneDriveSetup.exe"
+    )
+
+    # Initialize OneDrivePath variable
+    $OneDrivePath = $null
+
+    # Check each potential Onedrive path and define OneDrivePath
+    Write-Output "Checking for OneDrive installation"
+    foreach ($path in $OneDrivePotentialPaths) {
+        if (Test-Path $path) {
+            Set-Variable -Name "OneDrivePath" -Value "$path"
+            Write-Output "Onedrive found in $OneDrivePath"
+            break
+        }
+    }
+
     # Start OneDrive
     Write-Output "Starting OneDrive in $OneDrivePath"
     Start-Process -FilePath $OneDrivePath
@@ -206,7 +206,6 @@ Clear-Host
 #DefineBackupPath
 CalibreUpdateDownload
 CalibreBackup
-OneDriveStop
 CalibreUpdate
 OneDriveStart
 UpdateCleanup
