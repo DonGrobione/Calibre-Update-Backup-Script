@@ -159,20 +159,6 @@ function BackupCleanup {
     }
 }
 
-function VarDebug {
-    Write-Output "Date: $Date"
-    Write-Output "CalibreFolder: $CalibreFolder"
-    Write-Output "CalibreInstaller: $CalibreInstaller"
-    Write-Output "CalibreBackupPath: $CalibreBackupPath"
-    Write-Output "CalibreUpdateSource: $CalibreUpdateSource"
-    Write-Output "7zipPath: $7zipPath"
-    Write-Output "COMPUTERNAME: $env:COMPUTERNAME"
-    Write-Output "CalibreBackupRetention: $CalibreBackupRetention"
-    Write-Output "OneDrivePotentialPaths: $OneDrivePotentialPaths"
-    Write-Output "OneDrivePath: $OneDrivePath"
-    Start-Sleep -Seconds 5
-}
-
 function OneDriveStart {
     # Define potential OneDrive installation paths
     $OneDrivePotentialPaths = @(
@@ -201,7 +187,6 @@ function OneDriveStart {
 }
 
 ## Execution
-# VarDebug is commented out by default, as it is used to check if variables are set correctly
 Clear-Host
 #DefineBackupPath
 CalibreUpdateDownload
