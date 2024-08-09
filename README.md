@@ -7,7 +7,10 @@ I implemented the hostname validation, as I am running this script on several ma
 
 ---------------------------------------
 
-[Calibre Update Backup.bat](https://github.com/DonGrobione/Calibre-Update-Backup-Script/blob/main/Calibre%20Update%20Backup.bat) is depricated and will no longer updated.
+All files in [Legacy](https://github.com/DonGrobione/Calibre-Update-Backup-Script/tree/main/Legacy) are no longer maintained.
+
+
+[Calibre Update Backup.bat](https://github.com/DonGrobione/Calibre-Update-Backup-Script/blob/main/Legacy/Calibre%20Update%20Backup.bat) 
 
 A simple script that will download the latest Calibre Portable update from https://calibre-ebook.com/download_portable. Then it will use 7zip to create a backup file of the Calibre Portable folder. If you have your library located in a sub folder, it will be backed up too.
 
