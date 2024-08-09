@@ -15,4 +15,4 @@ All files in [Legacy](https://github.com/DonGrobione/Calibre-Update-Backup-Scrip
 I set it up, that the archive volume will be split every 4 GB, as I use OneDrive and sometimes there are issues with big files and/or some corporate policies. If this does not apply to you, just remove that parameter.
 
 
-[Calibre Update Backup OneDrive.ps1] (https://github.com/DonGrobione/Calibre-Update-Backup-Script/blob/main/Legacy/Calibre%20Update%20Backup%20OneDrive.ps1) is my old PS script where I had Calibre in my OneDrive folder.
+[Calibre Update Backup OneDrive.ps1](https://github.com/DonGrobione/Calibre-Update-Backup-Script/blob/main/Legacy/Calibre%20Update%20Backup%20OneDrive.ps1) is my old PS script where I had Calibre in my OneDrive folder.
