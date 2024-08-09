@@ -4,7 +4,7 @@
     It will asume your Library is a subfolder in Calibre Portable and compress everything using 7zip in 1 GB archives.
     Update will be downloaded in tmp and applied to Calibre Portable.
     Finally the update file will be deleted and then the script will check past backups and only keps the latest 3.
-    To prevent errors during update, OneDrive will be temporarly stopped.
+    I use this script on multiple hosts with differing folder structurs, hence the check for hostname to set variables.
 
 .DESCRIPTION
 This file is the script I use myself, hence you will need to change a few things around. Especially the function DefineBackupPath and the variable CalibreFolder.
@@ -15,11 +15,11 @@ This file is the script I use myself, hence you will need to change a few things
 #>
 
 # Start PS logging
-Start-Transcript -Path "$env:TEMP\Calibre-Backup-Update.log" -IncludeInvocationHeader
+Start-Transcript -Path "$PSScriptRoot\Calibre-Backup-Update.log" -IncludeInvocationHeader
 
 ##  Definition of variables, change as needed
-# Path to Calibre Portable in my OneDrive
-New-Variable -Name CalibreFolder -Value "$env:OneDrive\PortableApps\Calibre Portable" -Scope script
+# Path to Calibre Portable, will be set depending on hostname
+New-Variable -Name CalibreFolder -Value $null -Scope script
 
 # Calibre Update URL
 New-Variable -Name CalibreUpdateSource -Value "https://calibre-ebook.com/dist/portable" -Scope script
@@ -37,7 +37,7 @@ New-Variable -Name Date -Value (Get-Date).ToString("yyyy-MM-dd") -Scope script
 # Define number of backup datasets to be kept in $CalibreBackup. Only the latest n set will be kept.
 New-Variable -Name CalibreBackupRetention -Value "3" -Scope script
 
-# Variable for the path the backup files, will be set in the DefineBackupPath function
+# Variable for the path the backup files,  will be set depending on hostname
 New-Variable -Name CalibreBackupPath -Value $null -Scope script
 
 <#
@@ -47,40 +47,21 @@ Change env:COMPUTERNAME to the hostnam of your host and CalibreBackup to the pat
 if ($env:COMPUTERNAME -match "DONGROBIONE-PC") {
     Set-Variable CalibreBackupPath -Value "D:\HiDrive\Backup\Calibre\"
     Write-Output "Calibe backups found in $CalibreBackupPath"
+    Set-Variable CalibreFolder -Value "D:\HiDrive\PortableApps\Calibre Portable"
+    Write-Output "Calibe portable found in $CalibreFolder"
 }
 elseif ($env:COMPUTERNAME -match "DESKTOP-GS7HB29") {
     Set-Variable -Name CalibreBackupPath -Value "E:\HiDrive\Backup\Calibre\"
     Write-Output "Calibe backups found in $CalibreBackupPath"
+    Set-Variable CalibreFolder -Value "E:\HiDrive\PortableApps\Calibre Portable"
+    Write-Output "Calibe portable found in $CalibreFolder"
 }
 else {
     Write-Output "Hostname $env:COMPUTERNAME not configured."
-    Write-Output "CalibreBackupPath not set."
+    Write-Output "Host specific variables could not be set."
     Start-Sleep -Seconds 5
     Exit-PSSession 
 }
-
-
-## Functions
-#function DefineBackupPath {
-#    <#
-#    Function that will change CalibreBackupPath depending on the hostname.
-#    Change env:COMPUTERNAME to the hostnam of your host and CalibreBackup to the path where the backup will be saved.
-#    #>
-#    if ($env:COMPUTERNAME -match "DONGROBIONE-PC") {
-#        Set-Variable CalibreBackupPath -Value "D:\HiDrive\HiDrive\Backup\Calibre\"
-#        Write-Output "Calibe backups found in $CalibreBackupPath"
-#    }
-#    elseif ($env:COMPUTERNAME -match "DESKTOP-GS7HB29") {
-#        Set-Variable -Name CalibreBackupPath -Value "E:\HiDrive\Backup\Calibre\"
-#        Write-Output "Calibe backups found in $CalibreBackupPath"
-#    }
-#    else {
-#        Write-Output "Hostname $env:COMPUTERNAME not configured."
-#        Write-Output "CalibreBackupPath not set."
-#        Start-Sleep -Seconds 5
-#        Exit-PSSession 
-#    }    
-#}
 
 function CalibreUpdateDownload {
     Write-Output "Starting download from $CalibreUpdateSource to $CalibreInstaller"
@@ -108,16 +89,6 @@ function CalibreBackup {
 }
 
 function CalibreUpdate {
-    # Check if OneDrive process is running and stop it. This will prevent errors during Calibre Update.
-    $OneDriveProcess = Get-Process -Name "OneDrive" -ErrorAction SilentlyContinue
-    if ($OneDriveProcess) {
-        Write-Output "Stopping OneDrive process."
-        Stop-Process -Name "OneDrive" -Force -Verbose
-    }
-    else {
-        Write-Output "OneDrive not running."
-    }
-
     Write-Output "Starting Calibre Update $CalibreInstaller"
     Set-Alias Start-CalibreUpdateExe $CalibreInstaller
     Start-CalibreUpdateExe $CalibreFolder
@@ -159,40 +130,11 @@ function BackupCleanup {
     }
 }
 
-function OneDriveStart {
-    # Define potential OneDrive installation paths
-    $OneDrivePotentialPaths = @(
-        "${env:ProgramFiles}\Microsoft OneDrive\OneDrive.exe",
-        "${env:ProgramFiles(x86)}\Microsoft OneDrive\OneDrive.exe",
-        "${env:LocalAppData}\Microsoft\OneDrive\OneDrive.exe",
-        "${env:WinDir}\SysWOW64\OneDriveSetup.exe"
-    )
-
-    # Initialize OneDrivePath variable
-    $OneDrivePath = $null
-
-    # Check each potential Onedrive path and define OneDrivePath
-    Write-Output "Checking for OneDrive installation"
-    foreach ($path in $OneDrivePotentialPaths) {
-        if (Test-Path $path) {
-            Set-Variable -Name "OneDrivePath" -Value "$path"
-            Write-Output "Onedrive found in $OneDrivePath"
-            break
-        }
-    }
-
-    # Start OneDrive
-    Write-Output "Starting OneDrive in $OneDrivePath"
-    Start-Process -FilePath $OneDrivePath
-}
-
 ## Execution
 Clear-Host
-#DefineBackupPath
 CalibreUpdateDownload
 CalibreBackup
 CalibreUpdate
-OneDriveStart
 UpdateCleanup
 BackupCleanup
 
