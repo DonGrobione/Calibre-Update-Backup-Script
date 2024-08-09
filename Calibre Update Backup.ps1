@@ -59,7 +59,7 @@ elseif ($env:COMPUTERNAME -match "DESKTOP-GS7HB29") {
 }
 else {
     Write-Output "Hostname $env:COMPUTERNAME not configured."
-    Write-Output "CalibreBackupPath not set."
+    Write-Output "Host specific variables could not be set."
     Start-Sleep -Seconds 5
     Exit-PSSession 
 }
@@ -170,7 +170,6 @@ function OneDriveStart {
 
 ## Execution
 Clear-Host
-#DefineBackupPath
 CalibreUpdateDownload
 CalibreBackup
 CalibreUpdate
