@@ -15,7 +15,7 @@ This file is the script I use myself, hence you will need to change a few things
 #>
 
 # Start PS logging
-Start-Transcript -Path "$env:TEMP\Calibre-Backup-Update.log" -IncludeInvocationHeader
+Start-Transcript -Path "$PSScriptRoot\Calibre-Backup-Update.log" -IncludeInvocationHeader
 
 ##  Definition of variables, change as needed
 # Path to Calibre Portable, will be set depending on hostname
