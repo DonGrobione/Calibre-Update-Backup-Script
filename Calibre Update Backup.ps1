@@ -19,7 +19,8 @@ Start-Transcript -Path "$env:TEMP\Calibre-Backup-Update.log" -IncludeInvocationH
 
 ##  Definition of variables, change as needed
 # Path to Calibre Portable in my OneDrive
-New-Variable -Name CalibreFolder -Value "$env:OneDrive\PortableApps\Calibre Portable" -Scope script
+#New-Variable -Name CalibreFolder -Value "$env:OneDrive\PortableApps\Calibre Portable" -Scope script
+New-Variable -Name CalibreFolder -Value $null -Scope script
 
 # Calibre Update URL
 New-Variable -Name CalibreUpdateSource -Value "https://calibre-ebook.com/dist/portable" -Scope script
@@ -47,10 +48,14 @@ Change env:COMPUTERNAME to the hostnam of your host and CalibreBackup to the pat
 if ($env:COMPUTERNAME -match "DONGROBIONE-PC") {
     Set-Variable CalibreBackupPath -Value "D:\HiDrive\Backup\Calibre\"
     Write-Output "Calibe backups found in $CalibreBackupPath"
+    Set-Variable CalibreFolder -Value "D:\HiDrive\PortableApps\Calibre Portable"
+    Write-Output "Calibe portable found in $CalibreFolder"
 }
 elseif ($env:COMPUTERNAME -match "DESKTOP-GS7HB29") {
     Set-Variable -Name CalibreBackupPath -Value "E:\HiDrive\Backup\Calibre\"
     Write-Output "Calibe backups found in $CalibreBackupPath"
+    Set-Variable CalibreFolder -Value "E:\HiDrive\PortableApps\Calibre Portable"
+    Write-Output "Calibe portable found in $CalibreFolder"
 }
 else {
     Write-Output "Hostname $env:COMPUTERNAME not configured."
@@ -58,29 +63,6 @@ else {
     Start-Sleep -Seconds 5
     Exit-PSSession 
 }
-
-
-## Functions
-#function DefineBackupPath {
-#    <#
-#    Function that will change CalibreBackupPath depending on the hostname.
-#    Change env:COMPUTERNAME to the hostnam of your host and CalibreBackup to the path where the backup will be saved.
-#    #>
-#    if ($env:COMPUTERNAME -match "DONGROBIONE-PC") {
-#        Set-Variable CalibreBackupPath -Value "D:\HiDrive\HiDrive\Backup\Calibre\"
-#        Write-Output "Calibe backups found in $CalibreBackupPath"
-#    }
-#    elseif ($env:COMPUTERNAME -match "DESKTOP-GS7HB29") {
-#        Set-Variable -Name CalibreBackupPath -Value "E:\HiDrive\Backup\Calibre\"
-#        Write-Output "Calibe backups found in $CalibreBackupPath"
-#    }
-#    else {
-#        Write-Output "Hostname $env:COMPUTERNAME not configured."
-#        Write-Output "CalibreBackupPath not set."
-#        Start-Sleep -Seconds 5
-#        Exit-PSSession 
-#    }    
-#}
 
 function CalibreUpdateDownload {
     Write-Output "Starting download from $CalibreUpdateSource to $CalibreInstaller"
