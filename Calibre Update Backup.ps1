@@ -10,12 +10,11 @@
 This file is the script I use myself, hence you will need to change a few things around. Especially the function DefineBackupPath and the variable CalibreFolder.
 
 .NOTES
-    Created by DonGrobione
     Latest version can be found at https://github.com/DonGrobione/Calibre-Update-Backup-Script
 #>
 
 # Start PS logging
-Start-Transcript -Path "$env:TEMP\Calibre-Backup-Update.log" -IncludeInvocationHeader
+Start-Transcript -Path "$PSScriptRoot\Calibre-Backup-Update.log" -IncludeInvocationHeader
 
 ##  Definition of variables, change as needed
 # Path to Calibre Portable in my OneDrive
