@@ -11,13 +11,12 @@ This file is the script I use myself, hence you will need to change a few things
 
 .NOTES
     Latest version can be found at https://github.com/DonGrobione/Calibre-Update-Backup-Script
+    
+    Log events should look like this:
+    Write-Log -Message "This is an info level mesage." -LogLevel "Info"
+    Write-Log -Message "This is an error level mesage." -LogLevel "Error"
 #>
 
-<#
-Funtion to write logs:
-Write-Log -Message "This is an info level mesage." -LogLevel "Info"
-Write-Log -Message "This is an error level mesage." -LogLevel "Error"
-#>
 function Write-Log {
     param(
         [Parameter(Mandatory = $true)]
@@ -33,31 +32,30 @@ function Write-Log {
 
 ##  Definition of variables, change as needed
 # Path to Calibre Portable in my OneDrive
-New-Variable -Name CalibreFolder -Value "$env:OneDrive\PortableApps\Calibre Portable" -Scope script
+$CalibreFolder = "$env:OneDrive\PortableApps\Calibre Portable"
 
 # Calibre Update URL
-New-Variable -Name CalibreUpdateSource -Value "https://calibre-ebook.com/dist/portable" -Scope script
+$CalibreUpdateSource = "https://calibre-ebook.com/dist/portable"
 
 # Definition where the the update file will be downloaded to
-New-Variable -Name CalibreInstaller -Value "$env:TEMP\calibre-portable-installer.exe" -Scope script
+$CalibreInstaller = "$env:TEMP\calibre-portable-installer.exe"
 
 # 7zip binariy
-New-Variable -Name 7zipPath -Value "$env:ProgramFiles\7-Zip\7z.exe" -Scope script
+$7zipPath = "$env:ProgramFiles\7-Zip\7z.exe"
 Set-Alias Start-SevenZip $7zipPath -Scope script
 
 # Define Date sting in YYYY-MM-DD format for filename
-New-Variable -Name Date -Value (Get-Date).ToString("yyyy-MM-dd") -Scope script
+$Date = (Get-Date).ToString("yyyy-MM-dd")
 
 # Define number of backup datasets to be kept in $CalibreBackup. Only the latest n set will be kept.
-New-Variable -Name CalibreBackupRetention -Value "3" -Scope script
-
-# Variable for the path the backup files, will be set in the DefineBackupPath function
-New-Variable -Name CalibreBackupPath -Value $null -Scope script
+$CalibreBackupRetention = "3"
 
 <#
 Function that will change CalibreBackupPath depending on the hostname.
-Change env:COMPUTERNAME to the hostnam of your host and CalibreBackup to the path where the backup will be saved.
+Change env:COMPUTERNAME to the hostname of your host and CalibreBackup to the path where the backup will be saved.
+$CalibreBackupPath = "$null"
 #>
+$CalibreBackupPath = "$null"
 if ($env:COMPUTERNAME -match "DONGROBIONE-PC") {
     Set-Variable CalibreBackupPath -Value "D:\HiDrive\Backup\Calibre\"
     Write-Log -Message "Calibe backups found in $CalibreBackupPath" -LogLevel "Info"
@@ -71,28 +69,6 @@ else {
     Start-Sleep -Seconds 5
     Exit-PSSession 
 }
-
-
-## Functions
-#function DefineBackupPath {
-#    <#
-#    Function that will change CalibreBackupPath depending on the hostname.
-#    Change env:COMPUTERNAME to the hostnam of your host and CalibreBackup to the path where the backup will be saved.
-#    #>
-#    if ($env:COMPUTERNAME -match "DONGROBIONE-PC") {
-#        Set-Variable CalibreBackupPath -Value "D:\HiDrive\HiDrive\Backup\Calibre\"
-#        Write-Log -Message "Calibe backups found in $CalibreBackupPath"
-#    }
-#    elseif ($env:COMPUTERNAME -match "DESKTOP-GS7HB29") {
-#        Set-Variable -Name CalibreBackupPath -Value "E:\HiDrive\Backup\Calibre\"
-#        Write-Log -Message "Calibe backups found in $CalibreBackupPath"
-#    }
-#    else {
-#        Write-Log -Message "Hostname $env:COMPUTERNAME not configured. CalibreBackupPath not set." -LogLevel "Error"
-#        Start-Sleep -Seconds 5
-#        Exit-PSSession 
-#    }    
-#}
 
 function CalibreUpdateDownload {
     Write-Log -Message "Starting download from $CalibreUpdateSource to $CalibreInstaller" -LogLevel "Info"
@@ -201,7 +177,7 @@ function OneDriveStart {
 ## Execution
 try {
     Clear-Host
-    #DefineBackupPath
+    Write-Log -Message "Starting script." -LogLevel "Info"
     CalibreUpdateDownload
     CalibreBackup
     CalibreUpdate
@@ -211,5 +187,6 @@ try {
 }
 catch {
     <#Do this if a terminating exception happens#>
-    Write-Log -Message "Error encountered: $_" -LogLevel "Error"
+    Write-Log -Message "Error encountered:" -LogLevel "Error"
+    Write-Log -Message "$_.ScriptStackTrace" -LogLevel "Error"
 }
