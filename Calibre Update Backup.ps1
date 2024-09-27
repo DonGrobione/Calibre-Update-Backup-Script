@@ -13,8 +13,23 @@ This file is the script I use myself, hence you will need to change a few things
     Latest version can be found at https://github.com/DonGrobione/Calibre-Update-Backup-Script
 #>
 
-# Start PS logging
-Start-Transcript -Path "$PSScriptRoot\Calibre-Backup-Update.log" -IncludeInvocationHeader
+<#
+Funtion to write logs:
+Write-Log -Message "This is an info level mesage." -LogLevel "Info"
+Write-Log -Message "This is an error level mesage." -LogLevel "Error"
+#>
+function Write-Log {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Message,
+        [string]$LogLevel = "Info"
+    )
+    $LogPath = "$PSScriptRoot\Calibre-Backup-Update.log"
+    $TimeStamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $LogMessage = "$TimeStamp [$LogLevel] $Message"
+
+    Add-Content -Path $LogPath -Value $LogMessage
+}
 
 ##  Definition of variables, change as needed
 # Path to Calibre Portable in my OneDrive
@@ -45,15 +60,14 @@ Change env:COMPUTERNAME to the hostnam of your host and CalibreBackup to the pat
 #>
 if ($env:COMPUTERNAME -match "DONGROBIONE-PC") {
     Set-Variable CalibreBackupPath -Value "D:\HiDrive\Backup\Calibre\"
-    Write-Output "Calibe backups found in $CalibreBackupPath"
+    Write-Log -Message "Calibe backups found in $CalibreBackupPath" -LogLevel "Info"
 }
 elseif ($env:COMPUTERNAME -match "DESKTOP-GS7HB29") {
     Set-Variable -Name CalibreBackupPath -Value "E:\HiDrive\Backup\Calibre\"
-    Write-Output "Calibe backups found in $CalibreBackupPath"
+    Write-Log -Message "Calibe backups found in $CalibreBackupPath" -LogLevel "Info"
 }
 else {
-    Write-Output "Hostname $env:COMPUTERNAME not configured."
-    Write-Output "CalibreBackupPath not set."
+    Write-Log -Message "Hostname $env:COMPUTERNAME not configured. CalibreBackupPath not set." -LogLevel "Error"
     Start-Sleep -Seconds 5
     Exit-PSSession 
 }
@@ -67,39 +81,38 @@ else {
 #    #>
 #    if ($env:COMPUTERNAME -match "DONGROBIONE-PC") {
 #        Set-Variable CalibreBackupPath -Value "D:\HiDrive\HiDrive\Backup\Calibre\"
-#        Write-Output "Calibe backups found in $CalibreBackupPath"
+#        Write-Log -Message "Calibe backups found in $CalibreBackupPath"
 #    }
 #    elseif ($env:COMPUTERNAME -match "DESKTOP-GS7HB29") {
 #        Set-Variable -Name CalibreBackupPath -Value "E:\HiDrive\Backup\Calibre\"
-#        Write-Output "Calibe backups found in $CalibreBackupPath"
+#        Write-Log -Message "Calibe backups found in $CalibreBackupPath"
 #    }
 #    else {
-#        Write-Output "Hostname $env:COMPUTERNAME not configured."
-#        Write-Output "CalibreBackupPath not set."
+#        Write-Log -Message "Hostname $env:COMPUTERNAME not configured. CalibreBackupPath not set." -LogLevel "Error"
 #        Start-Sleep -Seconds 5
 #        Exit-PSSession 
 #    }    
 #}
 
 function CalibreUpdateDownload {
-    Write-Output "Starting download from $CalibreUpdateSource to $CalibreInstaller"
+    Write-Log -Message "Starting download from $CalibreUpdateSource to $CalibreInstaller" -LogLevel "Info"
     Start-BitsTransfer -Source $CalibreUpdateSource -Destination $CalibreInstaller -Priority Foreground
 }
 
 function CalibreBackup {
     if (Test-Path -Path $7zipPath -PathType Leaf) {
-        Write-Output "7zip found in $7zipPath, starting backup"
+        Write-Log -Message "7zip found in $7zipPath, starting backup"
         <#
         a - create archive
         mx9 - maximum compression
         v1g - volume / file split after 1 GB
         bsp - verboste activity stream 
         #>
-        Write-Output "Creating Backups $CalibreBackupPath\CalibrePortableBackup_$Date."
+        Write-Log -Message "Creating Backups $CalibreBackupPath\CalibrePortableBackup_$Date." -LogLevel "Info"
         Start-SevenZip a -mx9 -v1g -bsp2 "$CalibreBackupPath\CalibrePortableBackup_$Date" $CalibreFolder
     }
     else {
-        Write-Output "7zip installation path not found"
+        Write-Log -Message "7zip installation path not found" -LogLevel "Error"
         Start-Sleep -Seconds 5
         #Exit-PSSession
         break
@@ -110,14 +123,14 @@ function CalibreUpdate {
     # Check if OneDrive process is running and stop it. This will prevent errors during Calibre Update.
     $OneDriveProcess = Get-Process -Name "OneDrive" -ErrorAction SilentlyContinue
     if ($OneDriveProcess) {
-        Write-Output "Stopping OneDrive process."
+        Write-Log -Message "Stopping OneDrive process." -LogLevel "Info"
         Stop-Process -Name "OneDrive" -Force -Verbose
     }
     else {
-        Write-Output "OneDrive not running."
+        Write-Log -Message "OneDrive not running." -LogLevel "Error"
     }
 
-    Write-Output "Starting Calibre Update $CalibreInstaller"
+    Write-Log -Message "Starting Calibre Update $CalibreInstaller" -LogLevel "Info"
     Set-Alias Start-CalibreUpdateExe $CalibreInstaller
     Start-CalibreUpdateExe $CalibreFolder
     Start-Sleep -Seconds 40
@@ -125,12 +138,12 @@ function CalibreUpdate {
 
 function UpdateCleanup {
     # Deleteing update file
-    Write-Output "Deleting update file $CalibreInstaller"
+    Write-Log -Message "Deleting update file $CalibreInstaller" -LogLevel "Info"
     Remove-Item -Path $CalibreInstaller
 }
 
 function BackupCleanup {
-    Write-Output "Cleanup of old backups in $CalibreBackupPath"
+    Write-Log -Message "Cleanup of old backups in $CalibreBackupPath" -LogLevel "Info"
     # List all files in $CalibreBackupPath
     $files = Get-ChildItem -Path $CalibreBackupPath -Filter "CalibrePortableBackup_*.7z.*"
 
@@ -150,8 +163,8 @@ function BackupCleanup {
     if ($groupedFiles.Count -gt $CalibreBackupRetention) {
         $groupedFiles | Select-Object -First ($groupedFiles.Count - 3) | ForEach-Object {
             $_.Group | ForEach-Object {
-                Write-Output "Deleting old backup files:"
-                Write-Output "$_.FullName"
+                Write-Log -Message "Deleting old backup files:"
+                Write-Log -Message "$_.FullName"
                 Remove-Item -Path $_.FullName -Force
             }
         }
@@ -171,29 +184,32 @@ function OneDriveStart {
     $OneDrivePath = $null
 
     # Check each potential Onedrive path and define OneDrivePath
-    Write-Output "Checking for OneDrive installation"
+    Write-Log -Message "Checking for OneDrive installation"
     foreach ($path in $OneDrivePotentialPaths) {
         if (Test-Path $path) {
             Set-Variable -Name "OneDrivePath" -Value "$path"
-            Write-Output "Onedrive found in $OneDrivePath"
+            Write-Log -Message "Onedrive found in $OneDrivePath" -LogLevel "Info"
             break
         }
     }
 
     # Start OneDrive
-    Write-Output "Starting OneDrive in $OneDrivePath"
+    Write-Log -Message "Starting OneDrive in $OneDrivePath" -LogLevel "Info"
     Start-Process -FilePath $OneDrivePath
 }
 
 ## Execution
-Clear-Host
-#DefineBackupPath
-CalibreUpdateDownload
-CalibreBackup
-CalibreUpdate
-OneDriveStart
-UpdateCleanup
-BackupCleanup
-
-#Stop PS Logging
-Stop-Transcript
+try {
+    Clear-Host
+    #DefineBackupPath
+    CalibreUpdateDownload
+    CalibreBackup
+    CalibreUpdate
+    OneDriveStart
+    UpdateCleanup
+    BackupCleanup
+}
+catch {
+    <#Do this if a terminating exception happens#>
+    Write-Log -Message "Error encountered: $_" -LogLevel "Error"
+}
