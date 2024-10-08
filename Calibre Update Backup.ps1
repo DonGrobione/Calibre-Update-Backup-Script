@@ -42,7 +42,6 @@ $CalibreInstaller = "$env:TEMP\calibre-portable-installer.exe"
 
 # 7zip binariy
 $7zipPath = "$env:ProgramFiles\7-Zip\7z.exe"
-Set-Alias Start-SevenZip $7zipPath -Scope script
 
 # Define Date sting in YYYY-MM-DD format for filename
 $Date = (Get-Date).ToString("yyyy-MM-dd")
@@ -96,20 +95,27 @@ function CalibreBackup {
 }
 
 function CalibreUpdate {
-    # Check if OneDrive process is running and stop it. This will prevent errors during Calibre Update.
-    $OneDriveProcess = Get-Process -Name "OneDrive" -ErrorAction SilentlyContinue
-    if ($OneDriveProcess) {
-        Write-Log -Message "Stopping OneDrive process." -LogLevel "Info"
-        Stop-Process -Name "OneDrive" -Force -Verbose
-    }
-    else {
-        Write-Log -Message "OneDrive not running." -LogLevel "Error"
-    }
+    # Check if the OneDrive process is running
+    $process = Get-Process -Name "OneDrive" -ErrorAction SilentlyContinue
 
-    Write-Log -Message "Starting Calibre Update $CalibreInstaller" -LogLevel "Info"
-    Set-Alias Start-CalibreUpdateExe $CalibreInstaller
-    Start-CalibreUpdateExe $CalibreFolder
-    Start-Sleep -Seconds 40
+    if ($process) {
+        # If the process is running, stop it
+        Write-Log -Message "OneDrive process is running. Stopping." -LogLevel "Info"
+        Stop-Process -Name $process.Name -Force
+        Start-Sleep -Seconds 5
+    } else {
+        # If the process is not running, proceed with the rest of the script
+        Write-Log -Message "OneDrive process is not running. Proceeding with the script." -LogLevel "Info"
+    }
+    # Install the update
+    Write-Log -Message "Calibre update in $CalibreInstaller will be applied to $CalibreFolder" -LogLevel "Info"
+    Start-Process -FilePath "$CalibreInstaller" -ArgumentList `"$CalibreFolder`" -Wait
+    # Check the exit code for successful installation
+    if ($LASTEXITCODE -eq 0) {
+        Write-Log -Message "Calibre has been successfully updated." -LogLevel "Info"
+    } else {
+        Write-Log -Message "Calibre installation failed with exit code: $LASTEXITCODE" -LogLevel "Error"
+    }
 }
 
 function UpdateCleanup {
@@ -176,7 +182,6 @@ function OneDriveStart {
 
 ## Execution
 try {
-    Clear-Host
     Write-Log -Message "Starting script." -LogLevel "Info"
     CalibreUpdateDownload
     CalibreBackup
