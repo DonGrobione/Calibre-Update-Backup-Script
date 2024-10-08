@@ -67,7 +67,7 @@ function Set-CalibreBackupPath {
     else {
         Write-Log -Message "Hostname $env:COMPUTERNAME not configured. CalibreBackupPath not set." -LogLevel "Error"
         Start-Sleep -Seconds 5
-        Exit-PSSession
+        exit 1
     }
 }
 
@@ -91,9 +91,7 @@ function New-CalibreBackup {
     }
     else {
         Write-Log -Message "7zip installation path not found" -LogLevel "Error"
-        Start-Sleep -Seconds 5
-        #Exit-PSSession
-        break
+        exit 1
     }    
 }
 
