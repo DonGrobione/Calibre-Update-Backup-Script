@@ -116,15 +116,11 @@ function Install-CalibreUpdate {
     # Check the exit code for successful installation
     if ($LASTEXITCODE -eq 0) {
         Write-Log -Message "Calibre has been successfully updated." -LogLevel "Info"
+        Write-Log -Message "Deleting update file $CalibreInstaller" -LogLevel "Info"
+        Remove-Item -Path $CalibreInstaller
     } else {
         Write-Log -Message "Calibre installation failed with exit code: $LASTEXITCODE" -LogLevel "Error"
     }
-}
-
-function UpdateCleanup {
-    # Deleteing update file
-    Write-Log -Message "Deleting update file $CalibreInstaller" -LogLevel "Info"
-    Remove-Item -Path $CalibreInstaller
 }
 
 function Remove-ExpiredBackups {
@@ -191,7 +187,6 @@ try {
     New-CalibreBackup
     Install-CalibreUpdate
     Start-OneDrive
-    UpdateCleanup
     Remove-ExpiredBackups
 }
 catch {
