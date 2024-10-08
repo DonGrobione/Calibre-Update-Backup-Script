@@ -72,7 +72,7 @@ function Set-CalibreBackupPath {
 }
 
 
-function CalibreUpdateDownload {
+function Get-CalibreUpdate {
     Write-Log -Message "Starting download from $CalibreUpdateSource to $CalibreInstaller" -LogLevel "Info"
     Start-BitsTransfer -Source $CalibreUpdateSource -Destination $CalibreInstaller -Priority Foreground
 }
@@ -187,7 +187,7 @@ function OneDriveStart {
 try {
     Write-Log -Message "Starting script." -LogLevel "Info"
     Set-CalibreBackupPath
-    CalibreUpdateDownload
+    Get-CalibreUpdate
     CalibreBackup
     CalibreUpdate
     OneDriveStart
