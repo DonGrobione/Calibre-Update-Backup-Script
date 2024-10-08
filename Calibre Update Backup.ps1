@@ -127,7 +127,7 @@ function UpdateCleanup {
     Remove-Item -Path $CalibreInstaller
 }
 
-function BackupCleanup {
+function Remove-ExpiredBackups {
     Write-Log -Message "Cleanup of old backups in $CalibreBackupPath" -LogLevel "Info"
     # List all files in $CalibreBackupPath
     $files = Get-ChildItem -Path $CalibreBackupPath -Filter "CalibrePortableBackup_*.7z.*"
@@ -192,7 +192,7 @@ try {
     Install-CalibreUpdate
     Start-OneDrive
     UpdateCleanup
-    BackupCleanup
+    Remove-ExpiredBackups
 }
 catch {
     <#Do this if a terminating exception happens#>
