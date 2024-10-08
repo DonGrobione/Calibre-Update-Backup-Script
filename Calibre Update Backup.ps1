@@ -156,7 +156,7 @@ function BackupCleanup {
     }
 }
 
-function OneDriveStart {
+function Start-OneDrive {
     # Define potential OneDrive installation paths
     $OneDrivePotentialPaths = @(
         "${env:ProgramFiles}\Microsoft OneDrive\OneDrive.exe",
@@ -190,7 +190,7 @@ try {
     Get-CalibreUpdate
     New-CalibreBackup
     Install-CalibreUpdate
-    OneDriveStart
+    Start-OneDrive
     UpdateCleanup
     BackupCleanup
 }
