@@ -49,25 +49,28 @@ $Date = (Get-Date).ToString("yyyy-MM-dd")
 # Define number of backup datasets to be kept in $CalibreBackup. Only the latest n set will be kept.
 $CalibreBackupRetention = "3"
 
-<#
-Function that will change CalibreBackupPath depending on the hostname.
-Change env:COMPUTERNAME to the hostname of your host and CalibreBackup to the path where the backup will be saved.
-$CalibreBackupPath = "$null"
-#>
-$CalibreBackupPath = "$null"
-if ($env:COMPUTERNAME -match "DONGROBIONE-PC") {
-    Set-Variable CalibreBackupPath -Value "D:\HiDrive\Backup\Calibre\"
-    Write-Log -Message "Calibe backups found in $CalibreBackupPath" -LogLevel "Info"
+
+function Set-CalibreBackupPath {
+    <#
+    Function that will change CalibreBackupPath depending on the hostname.
+    Change env:COMPUTERNAME to the hostname of your host and CalibreBackup to the path where the backup will be saved.
+    #>
+    $script:CalibreBackupPath = $null
+    if ($env:COMPUTERNAME -match "DONGROBIONE-PC") {
+        $script:CalibreBackupPath = "D:\HiDrive\Backup\Calibre\"
+        Write-Log -Message "Calibe backups found in $CalibreBackupPath" -LogLevel "Info"
+    }
+    elseif ($env:COMPUTERNAME -match "DESKTOP-GS7HB29") {
+        $script:CalibreBackupPath = "E:\HiDrive\Backup\Calibre\"
+        Write-Log -Message "Calibe backups found in $CalibreBackupPath" -LogLevel "Info"
+    }
+    else {
+        Write-Log -Message "Hostname $env:COMPUTERNAME not configured. CalibreBackupPath not set." -LogLevel "Error"
+        Start-Sleep -Seconds 5
+        Exit-PSSession
+    }
 }
-elseif ($env:COMPUTERNAME -match "DESKTOP-GS7HB29") {
-    Set-Variable -Name CalibreBackupPath -Value "E:\HiDrive\Backup\Calibre\"
-    Write-Log -Message "Calibe backups found in $CalibreBackupPath" -LogLevel "Info"
-}
-else {
-    Write-Log -Message "Hostname $env:COMPUTERNAME not configured. CalibreBackupPath not set." -LogLevel "Error"
-    Start-Sleep -Seconds 5
-    Exit-PSSession 
-}
+
 
 function CalibreUpdateDownload {
     Write-Log -Message "Starting download from $CalibreUpdateSource to $CalibreInstaller" -LogLevel "Info"
@@ -183,6 +186,7 @@ function OneDriveStart {
 ## Execution
 try {
     Write-Log -Message "Starting script." -LogLevel "Info"
+    Set-CalibreBackupPath
     CalibreUpdateDownload
     CalibreBackup
     CalibreUpdate
