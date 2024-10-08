@@ -79,7 +79,7 @@ function Get-CalibreUpdate {
 
 function New-CalibreBackup {
     if (Test-Path -Path $7zipPath -PathType Leaf) {
-        Write-Log -Message "7zip found in $7zipPath, starting backup"
+        Write-Log -Message "7zip found in $7zipPath, starting backup." -LogLevel "Info"
         <#
         a - create archive
         mx9 - maximum compression
