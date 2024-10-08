@@ -118,6 +118,7 @@ function Install-CalibreUpdate {
         Remove-Item -Path $CalibreInstaller
     } else {
         Write-Log -Message "Calibre installation failed with exit code: $LASTEXITCODE" -LogLevel "Error"
+        exit 1
     }
 }
 
@@ -142,8 +143,8 @@ function Remove-ExpiredBackups {
     if ($groupedFiles.Count -gt $CalibreBackupRetention) {
         $groupedFiles | Select-Object -First ($groupedFiles.Count - 3) | ForEach-Object {
             $_.Group | ForEach-Object {
-                Write-Log -Message "Deleting old backup files:"
-                Write-Log -Message "$_.FullName"
+                Write-Log -Message "Deleting old backup files:" -LogLevel "Info"
+                Write-Log -Message "$_.FullName" -LogLevel "Info"
                 Remove-Item -Path $_.FullName -Force
             }
         }
@@ -163,7 +164,7 @@ function Start-OneDrive {
     $OneDrivePath = $null
 
     # Check each potential Onedrive path and define OneDrivePath
-    Write-Log -Message "Checking for OneDrive installation"
+    Write-Log -Message "Checking for OneDrive installation." -LogLevel "Info"
     foreach ($path in $OneDrivePotentialPaths) {
         if (Test-Path $path) {
             Set-Variable -Name "OneDrivePath" -Value "$path"
