@@ -170,7 +170,7 @@ function OneDriveStart {
     foreach ($path in $OneDrivePotentialPaths) {
         if (Test-Path $path) {
             Set-Variable -Name "OneDrivePath" -Value "$path"
-            Write-Log -Message "Onedrive found in $OneDrivePath" -LogLevel "Info"
+            Write-Log -Message "OneDrive found in $OneDrivePath" -LogLevel "Info"
             break
         }
     }
