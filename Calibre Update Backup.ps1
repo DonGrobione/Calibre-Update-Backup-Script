@@ -77,7 +77,7 @@ function Get-CalibreUpdate {
     Start-BitsTransfer -Source $CalibreUpdateSource -Destination $CalibreInstaller -Priority Foreground
 }
 
-function CalibreBackup {
+function New-CalibreBackup {
     if (Test-Path -Path $7zipPath -PathType Leaf) {
         Write-Log -Message "7zip found in $7zipPath, starting backup"
         <#
@@ -188,7 +188,7 @@ try {
     Write-Log -Message "Starting script." -LogLevel "Info"
     Set-CalibreBackupPath
     Get-CalibreUpdate
-    CalibreBackup
+    New-CalibreBackup
     CalibreUpdate
     OneDriveStart
     UpdateCleanup
