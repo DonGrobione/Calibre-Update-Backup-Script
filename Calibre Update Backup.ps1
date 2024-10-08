@@ -97,7 +97,7 @@ function New-CalibreBackup {
     }    
 }
 
-function CalibreUpdate {
+function Install-CalibreUpdate {
     # Check if the OneDrive process is running
     $process = Get-Process -Name "OneDrive" -ErrorAction SilentlyContinue
 
@@ -189,7 +189,7 @@ try {
     Set-CalibreBackupPath
     Get-CalibreUpdate
     New-CalibreBackup
-    CalibreUpdate
+    Install-CalibreUpdate
     OneDriveStart
     UpdateCleanup
     BackupCleanup
