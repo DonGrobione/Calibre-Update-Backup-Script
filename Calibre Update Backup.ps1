@@ -87,6 +87,7 @@ function New-CalibreBackup {
         bsp - verboste activity stream 
         #>
         Write-Log -Message "Creating Backups $CalibreBackupPath\CalibrePortableBackup_$Date." -LogLevel "Info"
+        Set-Alias Start-SevenZip $7zipPath
         Start-SevenZip a -mx9 -v1g -bsp2 "$CalibreBackupPath\CalibrePortableBackup_$Date" $CalibreFolder
     }
     else {
