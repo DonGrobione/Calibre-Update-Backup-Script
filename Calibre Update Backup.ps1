@@ -68,8 +68,6 @@ function Set-CalibreBackupPath {
         exit 1
     }
 }
-
-
 function Get-CalibreUpdate {
     Write-Log -Message "Starting download from $CalibreUpdateSource to $CalibreInstaller" -LogLevel "Info"
     Start-BitsTransfer -Source $CalibreUpdateSource -Destination $CalibreInstaller -Priority Foreground
