@@ -17,19 +17,6 @@ This file is the script I use myself, hence you will need to change a few things
     Write-Log -Message "This is an error level mesage." -LogLevel "Error"
 #>
 
-function Write-Log {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$Message,
-        [string]$LogLevel = "Info"
-    )
-    $LogPath = "$PSScriptRoot\Calibre-Backup-Update.log"
-    $TimeStamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $LogMessage = "$TimeStamp [$LogLevel] $Message"
-
-    Add-Content -Path $LogPath -Value $LogMessage
-}
-
 ##  Definition of variables, change as needed
 # Path to Calibre Portable in my OneDrive
 $CalibreFolder = "$env:OneDrive\PortableApps\Calibre Portable"
@@ -49,7 +36,18 @@ $Date = (Get-Date).ToString("yyyy-MM-dd")
 # Define number of backup datasets to be kept in $CalibreBackup folder and used in Remove-ExpiredBackups. Only the latest n set will be kept.
 $CalibreBackupRetention = "3"
 
+function Write-Log {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Message,
+        [string]$LogLevel = "Info"
+    )
+    $LogPath = "$PSScriptRoot\Calibre-Backup-Update.log"
+    $TimeStamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $LogMessage = "$TimeStamp [$LogLevel] $Message"
 
+    Add-Content -Path $LogPath -Value $LogMessage
+}
 function Set-CalibreBackupPath {
     <#
     Function that will change CalibreBackupPath depending on the hostname.
