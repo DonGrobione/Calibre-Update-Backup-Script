@@ -83,8 +83,7 @@ function New-CalibreBackup {
         bsp - verboste activity stream 
         #>
         Write-Log -Message "Creating Backups $CalibreBackupPath\CalibrePortableBackup_$Date." -LogLevel "Info"
-        Set-Alias Start-SevenZip $7zipPath
-        Start-SevenZip a -mx9 -v1g -bsp2 "$CalibreBackupPath\CalibrePortableBackup_$Date" $CalibreFolder
+        Start-Process -FilePath "$7zipPath" -ArgumentList "a -mx9 -bsp2 `"$CalibreBackupPath\CalibrePortableBackup_$Date`" `"$CalibreFolder`"" -Wait -NoNewWindow
     }
     else {
         Write-Log -Message "7zip installation path not found" -LogLevel "Error"
@@ -184,6 +183,7 @@ try {
     Install-CalibreUpdate
     Start-OneDrive
     Remove-ExpiredBackups
+    Write-Log -Message "Script completed." -LogLevel "Info"
 }
 catch {
     <#Do this if a terminating exception happens#>
