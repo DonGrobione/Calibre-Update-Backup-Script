@@ -75,20 +75,20 @@ function Get-CalibreUpdate {
 
 function New-CalibreBackup {
     if (Test-Path -Path $7zipPath -PathType Leaf) {
-        Write-Log -Message "7zip found in $7zipPath, starting backup." -LogLevel "Info"
+        Write-Log -Message "7zip found at $7zipPath, starting backup." -LogLevel "Info"
         <#
         a - create archive
         mx9 - maximum compression
         v1g - volume / file split after 1 GB
         bsp - verboste activity stream 
         #>
-        Write-Log -Message "Creating Backups $CalibreBackupPath\CalibrePortableBackup_$Date." -LogLevel "Info"
         Start-Process -FilePath "$7zipPath" -ArgumentList "a -mx9 -bsp2 `"$CalibreBackupPath\CalibrePortableBackup_$Date`" `"$CalibreFolder`"" -Wait -NoNewWindow
     }
     else {
-        Write-Log -Message "7zip installation path not found" -LogLevel "Error"
+        Write-Log -Message "7zip not found at $7zipPath" -LogLevel "Info"
+        Write-Log -Message "Stopping Script." -LogLevel "Info"
         exit 1
-    }    
+    }
 }
 
 function Install-CalibreUpdate {
