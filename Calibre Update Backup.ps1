@@ -30,7 +30,7 @@ $CalibreInstaller = "$env:TEMP\calibre-portable-installer.exe"
 $7zipPath = "$env:ProgramFiles\7-Zip\7z.exe"
 
 # Define Date sting in YYYY-MM-DD format for filename
-$Date = (Get-Date).ToString("yyyy-MM-dd_MM-mm")
+$Date = (Get-Date).ToString("yyyy-MM-dd_HH-mm")
 
 # Define number of backup datasets to be kept in $CalibreBackup folder and used in Remove-ExpiredBackups. Only the latest n set will be kept.
 $CalibreBackupRetention = 3
