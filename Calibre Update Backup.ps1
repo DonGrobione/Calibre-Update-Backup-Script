@@ -234,7 +234,7 @@ function Stop-HiDrive {
 
 ## Execution
 try {
-    Write-Log -Message "Starting script." -LogLevel "Info"
+    Write-Log -Message "=============== Starting script ===============" -LogLevel "Info"
     Set-CalibreBackupPath
     Set-CalibreFolderPath
     Get-CalibreUpdate
@@ -243,7 +243,7 @@ try {
     Install-CalibreUpdate
     Start-HiDrive
     Remove-ExpiredBackups
-    Write-Log -Message "Script completed." -LogLevel "Info"
+    Write-Log -Message "=============== Script completed ===============" -LogLevel "Info"
 }
 catch {
     <#Do this if a terminating exception happens#>
