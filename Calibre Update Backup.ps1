@@ -206,32 +206,43 @@ function Start-HiDrive {
 }
 
 function Stop-HiDrive {
-  # Check if the HiDrive process is running and stopping it to prevent sync errors
-  $process = Get-Process -Name "HiDrive.App" -ErrorAction SilentlyContinue
-  if ($process) {
-      # If the process is running, stop it
-      Write-Log -Message "HiDrive process is running. Stopping." -LogLevel "Info"
-      Stop-Process -Name $process.Name -Force
-      Start-Sleep -Seconds 5
-  } else {
-      # If the process is not running, proceed with the rest of the script
-      Write-Log -Message "HiDrive process is not running. Proceeding with the script." -LogLevel "Info"
-  }
-}
+    # Check if the HiDrive process is running and stop it to prevent sync errors
+    $process = Get-Process -Name "HiDrive.App" -ErrorAction SilentlyContinue
+    if ($process) {
+        # If the process is running, stop it
+        Write-Log -Message "HiDrive process is running. Stopping." -LogLevel "Info"
+        Stop-Process -Name $process.Name -Force
 
+        # Check every second if the process has stopped
+        while ($true) {
+            Start-Sleep -Seconds 1
+            $process = Get-Process -Name "HiDrive.App" -ErrorAction SilentlyContinue
+
+            if (-not $process) {
+                Write-Log -Message "HiDrive process has been successfully stopped. Proceeding with the script." -LogLevel "Info"
+                break
+            } else {
+                Write-Log -Message "Waiting for HiDrive to stop." -LogLevel "Info"
+            }
+        }
+    } else {
+        # If the process is not running, proceed with the rest of the script
+        Write-Log -Message "HiDrive process is not running. Proceeding with the script." -LogLevel "Info"
+    }
+}
 
 ## Execution
 try {
-    Write-Log -Message "Starting script." -LogLevel "Info"
-    Set-CalibreBackupPath
-    Set-CalibreFolderPath
-    Get-CalibreUpdate
+    #Write-Log -Message "Starting script." -LogLevel "Info"
+    #Set-CalibreBackupPath
+    #Set-CalibreFolderPath
+    #Get-CalibreUpdate
     Stop-HiDrive
-    New-CalibreBackup
-    Install-CalibreUpdate
+    #New-CalibreBackup
+    #Install-CalibreUpdate
     Start-HiDrive
-    Remove-ExpiredBackups
-    Write-Log -Message "Script completed." -LogLevel "Info"
+    #Remove-ExpiredBackups
+    #Write-Log -Message "Script completed." -LogLevel "Info"
 }
 catch {
     <#Do this if a terminating exception happens#>
