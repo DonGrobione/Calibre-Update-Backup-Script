@@ -110,15 +110,27 @@ function Get-CalibreUpdate {
 }
 
 function New-CalibreBackup {
+    # Create a new directory for the backup, using the date as the folder name
+    $backupFolder = "$script:CalibreBackupPath\$Date"
+    
+    # Check if the backup folder already exists, if not, create it
+    if (-not (Test-Path -Path $backupFolder)) {
+        Write-Log -Message "Creating backup folder: $backupFolder" -LogLevel "Info"
+        New-Item -Path $backupFolder -ItemType Directory
+    } else {
+        Write-Log -Message "Backup folder $backupFolder already exists." -LogLevel "Warning"
+    }
+
+    # Now check if 7zip exists and proceed with the backup
     if (Test-Path -Path $7zipPath -PathType Leaf) {
         Write-Log -Message "7zip found at $7zipPath, starting backup." -LogLevel "Info"
         <#
         a - create archive
         mx9 - maximum compression
         v1g - volume / file split after 1 GB
-        bsp - verboste activity stream 
+        bsp - verbose activity stream 
         #>
-        Start-Process -FilePath "$7zipPath" -ArgumentList "a -mx9 -bsp2 -v1g `"$CalibreBackupPath\CalibrePortableBackup_$Date`" `"$CalibreFolder`"" -Wait -NoNewWindow
+        Start-Process -FilePath "$7zipPath" -ArgumentList "a -mx9 -bsp2 -v1g `"$backupFolder\CalibrePortableBackup_$Date`" `"$CalibreFolder`"" -Wait -NoNewWindow
     }
     else {
         Write-Log -Message "7zip not found at $7zipPath" -LogLevel "Info"
@@ -233,16 +245,16 @@ function Stop-HiDrive {
 
 ## Execution
 try {
-    #Write-Log -Message "Starting script." -LogLevel "Info"
-    #Set-CalibreBackupPath
-    #Set-CalibreFolderPath
-    #Get-CalibreUpdate
+    Write-Log -Message "Starting script." -LogLevel "Info"
+    Set-CalibreBackupPath
+    Set-CalibreFolderPath
+    Get-CalibreUpdate
     Stop-HiDrive
-    #New-CalibreBackup
-    #Install-CalibreUpdate
+    New-CalibreBackup
+    Install-CalibreUpdate
     Start-HiDrive
-    #Remove-ExpiredBackups
-    #Write-Log -Message "Script completed." -LogLevel "Info"
+    Remove-ExpiredBackups
+    Write-Log -Message "Script completed." -LogLevel "Info"
 }
 catch {
     <#Do this if a terminating exception happens#>
