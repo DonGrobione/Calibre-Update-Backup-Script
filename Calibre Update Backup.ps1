@@ -149,17 +149,17 @@ function Remove-ExpiredBackups {
     # List all files in $CalibreBackupPath
     $files = Get-ChildItem -Path $CalibreBackupPath -Filter "CalibrePortableBackup_*.7z.*"
 
-    # Sort files by date
+    # Sort files by full date and time
     $sortedFiles = $files | Sort-Object {
-        # Extract the date from the filename
-        $dateString = $_.BaseName -replace "CalibrePortableBackup_([0-9]{4}-[0-9]{2}-[0-9]{2}).*", '$1'
-        [datetime]::ParseExact($dateString, "yyyy-MM-dd", $null)
+        # Extract the full date and time from the filename (yyyy-MM-dd_HH-mm)
+        $dateString = $_.BaseName -replace "CalibrePortableBackup_([0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}).*", '$1'
+        [datetime]::ParseExact($dateString, "yyyy-MM-dd_HH-mm", $null)
     }
 
-    # Group and sort files by date
+    # Group and sort files by full date and time
     $groupedFiles = $sortedFiles | Group-Object {
-        $_.BaseName -replace "CalibrePortableBackup_([0-9]{4}-[0-9]{2}-[0-9]{2}).*", '$1'
-    } | Sort-Object { [datetime]::ParseExact($_.Name, "yyyy-MM-dd", $null) }
+        $_.BaseName -replace "CalibrePortableBackup_([0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}).*", '$1'
+    } | Sort-Object { [datetime]::ParseExact($_.Name, "yyyy-MM-dd_HH-mm", $null) }
 
     # Delete all files older than the specified number in $CalibreBackupRetention
     if ($groupedFiles.Count -gt $CalibreBackupRetention) {
@@ -170,8 +170,7 @@ function Remove-ExpiredBackups {
                 Remove-Item -Path $_.FullName -Force
             }
         }
-    }
-    else {
+    } else {
         Write-Log -Message "No old backups to delete. Only $($groupedFiles.Count) backups found." -LogLevel "Info"
     }
 }
