@@ -159,12 +159,13 @@ function Install-CalibreUpdate {
 
 function Remove-ExpiredBackups {
     Write-Log -Message "Cleanup of old backups in $CalibreBackupPath" -LogLevel "Info"
+
     # List all files in $CalibreBackupPath
     $files = Get-ChildItem -Path $CalibreBackupPath -Filter "CalibrePortableBackup_*.7z.*"
 
     # Sort files by date
     $sortedFiles = $files | Sort-Object {
-        # Extrahieren Sie das Datum aus dem Dateinamen
+        # Extract the date from the filename
         $dateString = $_.BaseName -replace "CalibrePortableBackup_([0-9]{4}-[0-9]{2}-[0-9]{2}).*", '$1'
         [datetime]::ParseExact($dateString, "yyyy-MM-dd", $null)
     }
@@ -174,17 +175,21 @@ function Remove-ExpiredBackups {
         $_.BaseName -replace "CalibrePortableBackup_([0-9]{4}-[0-9]{2}-[0-9]{2}).*", '$1'
     } | Sort-Object { [datetime]::ParseExact($_.Name, "yyyy-MM-dd", $null) }
 
-    # Delete all files older that $CalibreBackupRetention
+    # Delete all files older than the specified number in $CalibreBackupRetention
     if ($groupedFiles.Count -gt $CalibreBackupRetention) {
-        $groupedFiles | Select-Object -First ($groupedFiles.Count - 3) | ForEach-Object {
+        $groupedFiles | Select-Object -First ($groupedFiles.Count - **$CalibreBackupRetention**) | ForEach-Object {
             $_.Group | ForEach-Object {
                 Write-Log -Message "Deleting old backup files:" -LogLevel "Info"
-                Write-Log -Message "$_.FullName" -LogLevel "Info"
+                Write-Log -Message "$($_.FullName)" -LogLevel "Info"
                 Remove-Item -Path $_.FullName -Force
             }
         }
     }
+    else {
+        Write-Log -Message "No old backups to delete. Only $($groupedFiles.Count) backups found." -LogLevel "Info"
+    }
 }
+
 
 function Start-OneDrive {
     # Define potential OneDrive installation paths
