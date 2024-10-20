@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
     This script will check the hostname and depening on it, will change the path where the backups will be saved.
-    It will asume your Library is a subfolder in Calibre Portable and compress everything using 7zip in 1 GB archives.
+    It will assume your Library is a subfolder in Calibre Portable and compress everything using 7zip in 1 GB archives.
     Update will be downloaded in tmp and applied to Calibre Portable.
     Finally the update file will be deleted and then the script will check past backups and only keeps the latest 3.
     To prevent errors during update, OneDrive will be temporarily stopped.
@@ -13,8 +13,8 @@ This file is the script I use myself, hence you will need to change a few things
     Latest version can be found at https://github.com/DonGrobione/Calibre-Update-Backup-Script
     
     Log events should look like this:
-    Write-Log -Message "This is an info level mesage." -LogLevel "Info"
-    Write-Log -Message "This is an error level mesage." -LogLevel "Error"
+    Write-Log -Message "This is an info level message." -LogLevel "Info"
+    Write-Log -Message "This is an error level message." -LogLevel "Error"
 #>
 
 ##  Definition of variables, change as needed
@@ -32,7 +32,7 @@ $7zipPath = "$env:ProgramFiles\7-Zip\7z.exe"
 $Date = (Get-Date).ToString("yyyy-MM-dd")
 
 # Define number of backup datasets to be kept in $CalibreBackup folder and used in Remove-ExpiredBackups. Only the latest n set will be kept.
-$CalibreBackupRetention = "3"
+$CalibreBackupRetention = 3
 
 function Write-Log {
     param(
@@ -130,6 +130,9 @@ function New-CalibreBackup {
 function Install-CalibreUpdate {
     # Check if the OneDrive process is running
     $process = Get-Process -Name "OneDrive" -ErrorAction SilentlyContinue
+    
+    # Reset exit code
+    $global:LASTEXITCODE = $null
 
     if ($process) {
         # If the process is running, stop it
@@ -224,6 +227,6 @@ try {
 }
 catch {
     <#Do this if a terminating exception happens#>
-    Write-Log -Message "Error encountered:" -LogLevel "Error"
-    Write-Log -Message "$_.ScriptStackTrace" -LogLevel "Error"
+    Write-Log -Message "Error encountered: $($_.Exception.Message)" -LogLevel "Error"
+    Write-Log -Message "StackTrace: $($_.Exception.StackTrace)" -LogLevel "Error"
 }
