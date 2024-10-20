@@ -29,7 +29,7 @@ $CalibreInstaller = "$env:TEMP\calibre-portable-installer.exe"
 $7zipPath = "$env:ProgramFiles\7-Zip\7z.exe"
 
 # Define Date sting in YYYY-MM-DD format for filename
-$Date = (Get-Date).ToString("yyyy-MM-dd")
+$Date = (Get-Date).ToString("yyyy-MM-dd_MM-mm")
 
 # Define number of backup datasets to be kept in $CalibreBackup folder and used in Remove-ExpiredBackups. Only the latest n set will be kept.
 $CalibreBackupRetention = 3
@@ -128,18 +128,6 @@ function New-CalibreBackup {
 }
 
 function Install-CalibreUpdate {
-#    # Check if the OneDrive process is running
-#    $process = Get-Process -Name "OneDrive" -ErrorAction SilentlyContinue
-#
-#    if ($process) {
-#        # If the process is running, stop it
-#        Write-Log -Message "OneDrive process is running. Stopping." -LogLevel "Info"
-#        Stop-Process -Name $process.Name -Force
-#        Start-Sleep -Seconds 5
-#    } else {
-#        # If the process is not running, proceed with the rest of the script
-#        Write-Log -Message "OneDrive process is not running. Proceeding with the script." -LogLevel "Info"
-#    }
     # Install the update and reset exit code for Calibre Update
     $global:LASTEXITCODE = $null
     Write-Log -Message "Calibre update in $CalibreInstaller will be applied to $CalibreFolder" -LogLevel "Info"
@@ -188,33 +176,50 @@ function Remove-ExpiredBackups {
     }
 }
 
-
-function Start-OneDrive {
-    # Define potential OneDrive installation paths
-    $OneDrivePotentialPaths = @(
-        "${env:ProgramFiles}\Microsoft OneDrive\OneDrive.exe",
-        "${env:ProgramFiles(x86)}\Microsoft OneDrive\OneDrive.exe",
-        "${env:LocalAppData}\Microsoft\OneDrive\OneDrive.exe",
-        "${env:WinDir}\SysWOW64\OneDriveSetup.exe"
+function Start-HiDrive {
+    # Define potential HiDrive installation paths
+    $HiDrivePotentialPaths = @(
+        "${env:ProgramFiles}\STRATO\HiDrive\HiDrive.App.exe",
+        "${env:ProgramFiles(x86)}\STRATO\HiDrive\HiDrive.App.exe",
+        "${env:LocalAppData}\STRATO\HiDrive\HiDrive.App.exe"
     )
 
-    # Initialize OneDrivePath variable
-    $OneDrivePath = $null
+    # Initialize $HiDrivePath variable
+    $HiDrivePath = $null
 
-    # Check each potential Onedrive path and define OneDrivePath
-    Write-Log -Message "Checking for OneDrive installation." -LogLevel "Info"
-    foreach ($path in $OneDrivePotentialPaths) {
+    # Check each potential HiDrive path and define HiDrivePath
+    Write-Log -Message "Checking for HiDrive installation." -LogLevel "Info"
+    foreach ($path in $HiDrivePotentialPaths) {
         if (Test-Path $path) {
-            Set-Variable -Name "OneDrivePath" -Value "$path"
-            Write-Log -Message "OneDrive found in $OneDrivePath" -LogLevel "Info"
+            $HiDrivePath = $path
+            Write-Log -Message "HiDrive found in $HiDrivePath" -LogLevel "Info"
             break
         }
     }
 
-    # Start OneDrive
-    Write-Log -Message "Starting OneDrive in $OneDrivePath" -LogLevel "Info"
-    Start-Process -FilePath $OneDrivePath
+    # Check if HiDrivePath was found and start HiDrive
+    if ($HiDrivePath) {
+        Write-Log -Message "Starting HiDrive in $HiDrivePath" -LogLevel "Info"
+        Start-Process -FilePath $HiDrivePath
+    } else {
+        Write-Log -Message "HiDrive not found on this system. Skipping start." -LogLevel "Error"  # Handling case where no HiDrive path is found
+    }
 }
+
+function Stop-HiDrive {
+  # Check if the HiDrive process is running and stopping it to prevent sync errors
+  $process = Get-Process -Name "HiDrive.App" -ErrorAction SilentlyContinue
+  if ($process) {
+      # If the process is running, stop it
+      Write-Log -Message "HiDrive process is running. Stopping." -LogLevel "Info"
+      Stop-Process -Name $process.Name -Force
+      Start-Sleep -Seconds 5
+  } else {
+      # If the process is not running, proceed with the rest of the script
+      Write-Log -Message "HiDrive process is not running. Proceeding with the script." -LogLevel "Info"
+  }
+}
+
 
 ## Execution
 try {
@@ -222,9 +227,10 @@ try {
     Set-CalibreBackupPath
     Set-CalibreFolderPath
     Get-CalibreUpdate
+    Stop-HiDrive
     New-CalibreBackup
     Install-CalibreUpdate
-    #Start-OneDrive
+    Start-HiDrive
     Remove-ExpiredBackups
     Write-Log -Message "Script completed." -LogLevel "Info"
 }
