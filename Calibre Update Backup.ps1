@@ -1,10 +1,10 @@
 <#
 .SYNOPSIS
-    This scrtipt will check the hostname and depening on it, will chnage the path where the backups will be saved.
+    This script will check the hostname and depening on it, will change the path where the backups will be saved.
     It will asume your Library is a subfolder in Calibre Portable and compress everything using 7zip in 1 GB archives.
     Update will be downloaded in tmp and applied to Calibre Portable.
-    Finally the update file will be deleted and then the script will check past backups and only keps the latest 3.
-    To prevent errors during update, OneDrive will be temporarly stopped.
+    Finally the update file will be deleted and then the script will check past backups and only keeps the latest 3.
+    To prevent errors during update, OneDrive will be temporarily stopped.
 
 .DESCRIPTION
 This file is the script I use myself, hence you will need to change a few things around. Especially the function DefineBackupPath and the variable CalibreFolder.
@@ -18,8 +18,6 @@ This file is the script I use myself, hence you will need to change a few things
 #>
 
 ##  Definition of variables, change as needed
-# Path to Calibre Portable in my OneDrive
-$CalibreFolder = "$env:OneDrive\PortableApps\Calibre Portable"
 
 # Calibre Update URL
 $CalibreUpdateSource = "https://calibre-ebook.com/dist/portable"
@@ -56,11 +54,11 @@ function Set-CalibreBackupPath {
     $script:CalibreBackupPath = $null
     if ($env:COMPUTERNAME -match "DONGROBIONE-PC") {
         $script:CalibreBackupPath = "D:\HiDrive\Backup\Calibre\"
-        Write-Log -Message "Calibre backups path was set to $CalibreBackupPath" -LogLevel "Info"
+        Write-Log -Message "Calibre backups path was set to $script:CalibreBackupPath" -LogLevel "Info"
     }
     elseif ($env:COMPUTERNAME -match "DESKTOP-GS7HB29") {
         $script:CalibreBackupPath = "E:\HiDrive\Backup\Calibre\"
-        Write-Log -Message "Calibre backups path was set to $CalibreBackupPath" -LogLevel "Info"
+        Write-Log -Message "Calibre backups path was set to $script:CalibreBackupPath" -LogLevel "Info"
     }
     else {
         Write-Log -Message "Hostname $env:COMPUTERNAME not configured. CalibreBackupPath not set." -LogLevel "Error"
@@ -73,6 +71,35 @@ function Set-CalibreBackupPath {
         Write-Log -Message "$script:CalibreBackupPath was verified." -LogLevel "Info"
     } else {
         Write-Log -Message "The path $script:CalibreBackupPath does not exist or is not accessible." -LogLevel "Error"
+        exit 1
+    }
+}
+
+function Set-CalibreFolderPath {
+    <#
+    Function that will change CalibreFolder depending on the hostname.
+    Change env:COMPUTERNAME to the hostname of your host and CalibreFolder to the path where the backup will be saved.
+    #>
+    $script:CalibreFolder = $null
+    if ($env:COMPUTERNAME -match "DONGROBIONE-PC") {
+        $script:CalibreFolder = "D:\HiDrive\PortableApps\Calibre Portable"
+        Write-Log -Message "Calibre portable path was set to $script:CalibreFolder" -LogLevel "Info"
+    }
+    elseif ($env:COMPUTERNAME -match "DESKTOP-GS7HB29") {
+        $script:CalibreFolder = "E:\HiDrive\PortableApps\Calibre Portable"
+        Write-Log -Message "Calibre portable path was set to $script:CalibreFolder" -LogLevel "Info"
+    }
+    else {
+        Write-Log -Message "Hostname $env:COMPUTERNAME not configured. CalibreBackupPath not set." -LogLevel "Error"
+        Start-Sleep -Seconds 5
+        exit 1
+    }
+
+    # Check if $script:CalibreFolder was set correctly
+    if (Test-Path -Path $script:CalibreFolder -PathType Container) {
+        Write-Log -Message "$script:CalibreFolder was verified." -LogLevel "Info"
+    } else {
+        Write-Log -Message "The path $script:CalibreFolder does not exist or is not accessible." -LogLevel "Error"
         exit 1
     }
 }
@@ -187,6 +214,7 @@ function Start-OneDrive {
 try {
     Write-Log -Message "Starting script." -LogLevel "Info"
     Set-CalibreBackupPath
+    Set-CalibreFolderPath
     Get-CalibreUpdate
     New-CalibreBackup
     Install-CalibreUpdate
