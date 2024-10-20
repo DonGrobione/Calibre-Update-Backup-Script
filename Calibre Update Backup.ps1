@@ -128,22 +128,20 @@ function New-CalibreBackup {
 }
 
 function Install-CalibreUpdate {
-    # Check if the OneDrive process is running
-    $process = Get-Process -Name "OneDrive" -ErrorAction SilentlyContinue
-    
-    # Reset exit code
+#    # Check if the OneDrive process is running
+#    $process = Get-Process -Name "OneDrive" -ErrorAction SilentlyContinue
+#
+#    if ($process) {
+#        # If the process is running, stop it
+#        Write-Log -Message "OneDrive process is running. Stopping." -LogLevel "Info"
+#        Stop-Process -Name $process.Name -Force
+#        Start-Sleep -Seconds 5
+#    } else {
+#        # If the process is not running, proceed with the rest of the script
+#        Write-Log -Message "OneDrive process is not running. Proceeding with the script." -LogLevel "Info"
+#    }
+    # Install the update and reset exit code for Calibre Update
     $global:LASTEXITCODE = $null
-
-    if ($process) {
-        # If the process is running, stop it
-        Write-Log -Message "OneDrive process is running. Stopping." -LogLevel "Info"
-        Stop-Process -Name $process.Name -Force
-        Start-Sleep -Seconds 5
-    } else {
-        # If the process is not running, proceed with the rest of the script
-        Write-Log -Message "OneDrive process is not running. Proceeding with the script." -LogLevel "Info"
-    }
-    # Install the update
     Write-Log -Message "Calibre update in $CalibreInstaller will be applied to $CalibreFolder" -LogLevel "Info"
     Start-Process -FilePath "$CalibreInstaller" -ArgumentList `"$CalibreFolder`" -Wait
     # Check the exit code for successful installation
@@ -177,7 +175,7 @@ function Remove-ExpiredBackups {
 
     # Delete all files older than the specified number in $CalibreBackupRetention
     if ($groupedFiles.Count -gt $CalibreBackupRetention) {
-        $groupedFiles | Select-Object -First ($groupedFiles.Count - **$CalibreBackupRetention**) | ForEach-Object {
+        $groupedFiles | Select-Object -First ($groupedFiles.Count - $CalibreBackupRetention) | ForEach-Object {
             $_.Group | ForEach-Object {
                 Write-Log -Message "Deleting old backup files:" -LogLevel "Info"
                 Write-Log -Message "$($_.FullName)" -LogLevel "Info"
@@ -226,7 +224,7 @@ try {
     Get-CalibreUpdate
     New-CalibreBackup
     Install-CalibreUpdate
-    Start-OneDrive
+    #Start-OneDrive
     Remove-ExpiredBackups
     Write-Log -Message "Script completed." -LogLevel "Info"
 }
