@@ -56,18 +56,27 @@ function Set-CalibreBackupPath {
     $script:CalibreBackupPath = $null
     if ($env:COMPUTERNAME -match "DONGROBIONE-PC") {
         $script:CalibreBackupPath = "D:\HiDrive\Backup\Calibre\"
-        Write-Log -Message "Calibe backups found in $CalibreBackupPath" -LogLevel "Info"
+        Write-Log -Message "Calibre backups path was set to $CalibreBackupPath" -LogLevel "Info"
     }
     elseif ($env:COMPUTERNAME -match "DESKTOP-GS7HB29") {
         $script:CalibreBackupPath = "E:\HiDrive\Backup\Calibre\"
-        Write-Log -Message "Calibe backups found in $CalibreBackupPath" -LogLevel "Info"
+        Write-Log -Message "Calibre backups path was set to $CalibreBackupPath" -LogLevel "Info"
     }
     else {
         Write-Log -Message "Hostname $env:COMPUTERNAME not configured. CalibreBackupPath not set." -LogLevel "Error"
         Start-Sleep -Seconds 5
         exit 1
     }
+
+    # Check if $script:CalibreBackupPath was set correctly
+    if (Test-Path -Path $script:CalibreBackupPath -PathType Container) {
+        Write-Log -Message "$script:CalibreBackupPath was verified." -LogLevel "Info"
+    } else {
+        Write-Log -Message "The path $script:CalibreBackupPath does not exist or is not accessible." -LogLevel "Error"
+        exit 1
+    }
 }
+
 function Get-CalibreUpdate {
     Write-Log -Message "Starting download from $CalibreUpdateSource to $CalibreInstaller" -LogLevel "Info"
     Start-BitsTransfer -Source $CalibreUpdateSource -Destination $CalibreInstaller -Priority Foreground
