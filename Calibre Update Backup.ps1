@@ -118,7 +118,7 @@ function New-CalibreBackup {
         v1g - volume / file split after 1 GB
         bsp - verboste activity stream 
         #>
-        Start-Process -FilePath "$7zipPath" -ArgumentList "a -mx9 -bsp2 `"$CalibreBackupPath\CalibrePortableBackup_$Date`" `"$CalibreFolder`"" -Wait -NoNewWindow
+        Start-Process -FilePath "$7zipPath" -ArgumentList "a -mx9 -bsp2 -v1g `"$CalibreBackupPath\CalibrePortableBackup_$Date`" `"$CalibreFolder`"" -Wait -NoNewWindow
     }
     else {
         Write-Log -Message "7zip not found at $7zipPath" -LogLevel "Info"
