@@ -4,10 +4,11 @@
     It will assume your Library is a subfolder in Calibre Portable and compress everything using 7zip in 1 GB archives.
     Update will be downloaded in tmp and applied to Calibre Portable.
     Finally the update file will be deleted and then the script will check past backups and only keeps the latest 3.
-    To prevent errors during update, OneDrive will be temporarily stopped.
+    To prevent errors during update, Strato HiDrive will be temporarily stopped.
+    This file is the script I use myself, hence you will need to change a few things around. Especially the function DefineBackupPath and the variable CalibreFolder.
 
 .DESCRIPTION
-This file is the script I use myself, hence you will need to change a few things around. Especially the function DefineBackupPath and the variable CalibreFolder.
+    Will backup Calilbre Portable, download and apply update, while stopping/starting HiDrive to prevent errors
 
 .NOTES
     Latest version can be found at https://github.com/DonGrobione/Calibre-Update-Backup-Script
