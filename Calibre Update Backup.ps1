@@ -133,14 +133,8 @@ function Install-CalibreUpdate {
     $global:LASTEXITCODE = $null
     Write-Log -Message "Calibre update in $CalibreInstaller will be applied to $CalibreFolder" -LogLevel "Info"
     Start-Process -FilePath "$CalibreInstaller" -ArgumentList `"$CalibreFolder`" -Wait
-    # Check the exit code for successful installation
-    if ($LASTEXITCODE -eq 0) {
-        Write-Log -Message "Calibre has been successfully updated." -LogLevel "Info"
-        Write-Log -Message "Deleting update file $CalibreInstaller" -LogLevel "Info"
-        Remove-Item -Path $CalibreInstaller
-    } else {
-        Write-Log -Message "Calibre installation failed with exit code: $LASTEXITCODE" -LogLevel "Error"
-    }
+    Write-Log -Message "Deleting update file $CalibreInstaller" -LogLevel "Info"
+    Remove-Item -Path $CalibreInstaller
 }
 
 function Remove-ExpiredBackups {
