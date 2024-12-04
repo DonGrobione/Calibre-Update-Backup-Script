@@ -140,7 +140,6 @@ function Install-CalibreUpdate {
         Remove-Item -Path $CalibreInstaller
     } else {
         Write-Log -Message "Calibre installation failed with exit code: $LASTEXITCODE" -LogLevel "Error"
-        exit 1
     }
 }
 
