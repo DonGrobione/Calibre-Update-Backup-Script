@@ -159,7 +159,7 @@ function Remove-ExpiredBackups {
     if ($groupedFiles.Count -gt $CalibreBackupRetention) {
         $groupedFiles | Select-Object -First ($groupedFiles.Count - $CalibreBackupRetention) | ForEach-Object {
             $_.Group | ForEach-Object {
-                Write-Log -Message "Deleting old backup files: $($_.FullName)" -LogLevel "Info"
+                Write-Log -Message "Deleting $($_.FullName)" -LogLevel "Info"
                 Remove-Item -Path $_.FullName -Force
             }
         }
