@@ -133,10 +133,12 @@ function New-CalibreBackup {
     if (Test-Path -Path $7zipPath -PathType Leaf) {
         Write-Log -Message "7zip found at $7zipPath, starting backup." -LogLevel "Info"
         <#
+        https://7ziphelp.com/7zip-command-line
         a - create archive
         mx9 - maximum compression
         v1g - volume / file split after 1 GB
-        bsp - verboste activity stream 
+        bsp - verboste activity (progress) stream 
+        bse - error stream ?
         #>
         Start-Process -FilePath "$7zipPath" -ArgumentList "a -mx9 -bsp2 -v1g `"$CalibreBackupPath\CalibrePortableBackup_$Date`" `"$CalibreFolder`"" -Wait -NoNewWindow
     }
