@@ -106,8 +106,27 @@ function Set-CalibreFolderPath {
 }
 
 function Get-CalibreUpdate {
-    Write-Log -Message "Starting download from $CalibreUpdateSource to $CalibreInstaller" -LogLevel "Info"
-    Start-BitsTransfer -Source $CalibreUpdateSource -Destination $CalibreInstaller -Priority Foreground
+    # Verify if the update file froma previus update still exists and delete it if it does
+    if (Test-Path -Path $CalibreInstaller -PathType Leaf) {
+        Write-Log -Message "Calibre update file from previous update found at $CalibreInstaller. Deleting." -LogLevel "Info"
+        Remove-Item -Path $CalibreInstaller -Force
+    }
+    else {
+        Write-Log -Message "No Calibre update file found from a previous download." -LogLevel "Info"
+    }    
+
+    # Attempt to download the file
+    Write-Log -Message "Downloading $CalibreUpdateSource to $CalibreInstaller" -LogLevel "Info"
+    Start-BitsTransfer -Priority Foreground -Source $CalibreUpdateSource -Destination $CalibreInstaller -ErrorAction Stop
+
+    # Verify if the file was downloaded successfully
+    if (Test-Path -Path $CalibreInstaller -PathType Leaf) {
+        Write-Log -Message "Calibre update downloaded successfully to $CalibreInstaller" -LogLevel "Info"
+    }
+    else {
+        Write-Log -Message "Calibre update file not found at $CalibreInstaller after download attempt." -LogLevel "Error"
+        throw "Download failed: Update file is missing."
+    }
 }
 
 function New-CalibreBackup {
