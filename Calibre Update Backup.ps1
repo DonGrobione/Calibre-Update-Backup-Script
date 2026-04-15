@@ -18,7 +18,7 @@
     Write-Log -Message "This is an error level message." -LogLevel "Error"
 #>
 
-##  Definition of variables, change as needed
+#Region: Definition of variables, change as needed
 
 # Calibre Update URL
 $CalibreUpdateSource = "https://calibre-ebook.com/dist/portable"
@@ -26,7 +26,7 @@ $CalibreUpdateSource = "https://calibre-ebook.com/dist/portable"
 # Definition where the the update file will be downloaded to
 $CalibreInstaller = "$env:TEMP\calibre-portable-installer.exe"
 
-# 7zip binariy
+# 7zip binary
 $7zipPath = "$env:ProgramFiles\7-Zip\7z.exe"
 
 # Define Date sting in YYYY-MM-DD format for filename
@@ -34,7 +34,9 @@ $Date = (Get-Date).ToString("yyyy-MM-dd_HH-mm")
 
 # Define number of backup datasets to be kept in $CalibreBackup folder and used in Remove-ExpiredBackups. Only the latest n set will be kept.
 $CalibreBackupRetention = 3
+#EndRegion
 
+#Region: Functions
 function Write-Log {
     param(
         [Parameter(Mandatory = $true)]
@@ -244,8 +246,9 @@ function Stop-HiDrive {
         Write-Log -Message "HiDrive process is not running. Proceeding with the script." -LogLevel "Info"
     }
 }
+#EndRegion
 
-## Execution
+#Region: Main script execution
 try {
     Write-Log -Message "=============== Starting script ===============" -LogLevel "Info"
     Set-CalibreBackupPath
@@ -263,3 +266,4 @@ catch {
     Write-Log -Message "Error encountered: $($_.Exception.Message)" -LogLevel "Error"
     Write-Log -Message "StackTrace: $($_.Exception.StackTrace)" -LogLevel "Error"
 }
+#EndRegion
