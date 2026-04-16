@@ -34,11 +34,11 @@ This repository contains a PowerShell workflow that:
 
 ```text
 .
-|-- .git/
 |-- Legacy/
 |   `-- Calibre Update Backup.bat
 |-- Calibre Update Backup.ps1
 |-- .gitignore
+|-- LICENSE.md
 `-- README.md
 ```
 
@@ -52,9 +52,15 @@ This repository contains a PowerShell workflow that:
 	Current maintained script.
 - `.gitignore`
 	Git ignore rules for local/runtime artifacts.
+- `LICENSE.md`
+	MIT License file.
 - `README.md`
 	Project documentation.
 
 ## Legacy Notes
 
 All files under `Legacy/` are retained for reference and migration history. Use `Calibre Update Backup.ps1` for current operations.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE.md). You are free to use and modify the code as long as you include the original copyright notice and credit the author.
