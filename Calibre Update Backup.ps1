@@ -15,10 +15,10 @@
     Runs the full backup-update-cleanup workflow with host-specific path resolution.
 
 .NOTES
-    Version: 1.0.0
+    Version: 1.0.1
     Updated: 2026-04-16
-
-    Latest version can be found at https://github.com/DonGrobione/Calibre-Update-Backup-Script
+    Mail: dongrobione@proton.me
+    Latest version: https://github.com/DonGrobione/Calibre-Update-Backup-Script
 
     Log events should look like this:
     Write-Log -Message "This is an info level message." -LogLevel "Info"
