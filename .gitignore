@@ -1,3 +1,4 @@
+.copilot/
+.vscode/
 *.lnk
-.vscode
 *.log
