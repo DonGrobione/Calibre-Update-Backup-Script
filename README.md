@@ -1,15 +1,60 @@
-[Calibre Update Backup.ps1](https://github.com/DonGrobione/Calibre-Update-Backup-Script/blob/main/Calibre%20Update%20Backup.ps1) is my current script, which I use myself. Therefore you will need to change a few things, see comments for details.
+# Calibre Update Backup Script
 
-It will do much the same as the old bat file (see section below), with a few extra steps.
-Downloading the calibre update, creating a backup with changing path depending on the hostname, stopping OneDrive, appliying the update, starting OneDrive. Finally it will delete the update file and will only keep the latest three backups.
+This repository contains a PowerShell workflow that:
 
-I implemented the hostname validation, as I am running this script on several machines and am to lazy to maintain specific scripts. Sometimes the calibre update failes due to some OneDrive file lock issue, therefore I will stop OnDrive temporarly for the Calibre Update.
+1. Resolves Calibre and backup paths based on the current hostname.
+2. Downloads the latest Calibre Portable installer.
+3. Stops STRATO HiDrive to avoid sync/file-lock issues.
+4. Creates a split 7z backup of the Calibre Portable folder.
+5. Installs the update.
+6. Restarts HiDrive.
+7. Deletes old backup sets and keeps only the newest configured amount.
 
----------------------------------------
+## Main Script
 
-All files in [Legacy](https://github.com/DonGrobione/Calibre-Update-Backup-Script/tree/main/Legacy) are no longer maintained.
+- `Calibre Update Backup.ps1`
+	Main script for backup, update, HiDrive stop/start, and retention cleanup.
 
+## Requirements
 
-[Calibre Update Backup.bat](https://github.com/DonGrobione/Calibre-Update-Backup-Script/blob/main/Legacy/Calibre%20Update%20Backup.bat) is a simple script that will download the latest Calibre Portable update from https://calibre-ebook.com/download_portable. Then it will use 7zip to create a backup file of the Calibre Portable folder. If you have your library located in a sub folder, it will be backed up too.
+- Windows PowerShell
+- 7-Zip installed at `C:\Program Files\7-Zip\7z.exe` (default path used by script)
+- Access to the target backup and Calibre Portable directories defined in the script
+- STRATO HiDrive client (optional but supported and handled by the script)
 
-I set it up, that the archive volume will be split every 4 GB, as I use OneDrive and sometimes there are issues with big files and/or some corporate policies. If this does not apply to you, just remove that parameter.
+## Configuration Notes
+
+- Host-specific paths are configured in:
+	- `Set-CalibreBackupPath`
+	- `Set-CalibreFolderPath`
+- Retention count is controlled by `$CalibreBackupRetention`.
+- Installer is downloaded to `$env:TEMP\calibre-portable-installer.exe`.
+
+## Repository Structure
+
+```text
+.
+|-- .git/
+|-- Legacy/
+|   `-- Calibre Update Backup.bat
+|-- Calibre Update Backup.ps1
+|-- .gitignore
+`-- README.md
+```
+
+## File and Directory Purpose
+
+- `Legacy/`
+	Historical scripts kept for reference only; not actively maintained.
+- `Legacy/Calibre Update Backup.bat`
+	Older batch-file implementation.
+- `Calibre Update Backup.ps1`
+	Current maintained script.
+- `.gitignore`
+	Git ignore rules for local/runtime artifacts.
+- `README.md`
+	Project documentation.
+
+## Legacy Notes
+
+All files under `Legacy/` are retained for reference and migration history. Use `Calibre Update Backup.ps1` for current operations.
