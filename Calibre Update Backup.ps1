@@ -1,18 +1,26 @@
 <#
 .SYNOPSIS
-    This script will check the hostname and depening on it, will change the path where the backups will be saved.
-    It will assume your Library is a subfolder in Calibre Portable and compress everything using 7zip in 1 GB archives.
-    Update will be downloaded in tmp and applied to Calibre Portable.
-    Finally the update file will be deleted and then the script will check past backups and only keeps the latest 3.
-    To prevent errors during update, Strato HiDrive will be temporarily stopped.
-    This file is the script I use myself, hence you will need to change a few things around. Especially the function DefineBackupPath and the variable CalibreFolder.
+    Backs up Calibre Portable, downloads and installs the latest portable update,
+    and removes old backup sets based on retention.
 
 .DESCRIPTION
-    Will backup Calilbre Portable, download and apply update, while stopping/starting HiDrive to prevent errors
+    The script resolves host-specific paths for the Calibre installation and backup location,
+    downloads the current Calibre Portable installer to the TEMP folder,
+    stops HiDrive to avoid sync/file lock issues during backup and update,
+    creates a split 7z backup archive, installs the update, restarts HiDrive,
+    and then deletes expired backups.
+
+.EXAMPLE
+    .\Calibre Update Backup.ps1
+
+    Runs the full backup-update-cleanup workflow with host-specific path resolution.
 
 .NOTES
+    Version: 1.0.0
+    Updated: 2026-04-16
+
     Latest version can be found at https://github.com/DonGrobione/Calibre-Update-Backup-Script
-    
+
     Log events should look like this:
     Write-Log -Message "This is an info level message." -LogLevel "Info"
     Write-Log -Message "This is an error level message." -LogLevel "Error"
