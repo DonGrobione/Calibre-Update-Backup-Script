@@ -4,8 +4,7 @@
     and removes old backup sets based on retention.
 
 .DESCRIPTION
-    The script resolves host-specific paths for the Calibre installation and backup location,
-    downloads the current Calibre Portable installer to the TEMP folder,
+    The script resolves host-specific paths for the Calibre installation and backup location, downloads the current Calibre Portable installer to the TEMP folder,
     stops HiDrive to avoid sync/file lock issues during backup and update,
     creates a split 7z backup archive, installs the update, restarts HiDrive,
     and then deletes expired backups.
