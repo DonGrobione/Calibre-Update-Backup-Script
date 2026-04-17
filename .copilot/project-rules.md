@@ -33,7 +33,13 @@
 - Do not use ====== separators (reserved for the main script only).
 - For existing scripts: maintain the logging pattern, validate paths with Test-Path, use try-catch for critical operations.
 
-## 5. Security
+## 5. Copilot Memory
+- All Copilot memory relevant to this project must be written to `.copilot/repo-memory.md`, not to the local user-scoped Copilot memory system.
+- This ensures memory is shared across all machines via version control.
+- Session-only notes may still use session memory, but any insight worth keeping must be persisted to `.copilot/repo-memory.md`.
+- When reading project context at the start of a task, always load `.copilot/repo-memory.md` first.
+
+## 6. Security
 - Never trust user input; always validate.
 - Apply defense in depth, least privilege, and fail securely principles.
 - Never store secrets in code — all passwords, usernames, credentials, API keys, tokens, and similar sensitive values must be stored in a `.psd1` file under the `Secrets/` folder and read from there at runtime.
