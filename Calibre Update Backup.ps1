@@ -159,6 +159,16 @@ function New-CalibreBackup {
 }
 
 function Install-CalibreUpdate {
+    # Check if the Calibre process is running and stop it to allow the update to be installed
+    if (Get-Process -Name "Calibre" -ErrorAction SilentlyContinue) {
+        Write-Log -Message "Calibre process is running. Stopping Calibre before update." -LogLevel "Error"
+        Stop-Process -Name "Calibre"
+        Start-Sleep -Seconds 2
+    }
+    else {
+        Write-Log -Message "Calibre process is not running. Proceeding with update." -LogLevel "Info"
+    }
+    
     # Install the update and reset exit code for Calibre Update
     $global:LASTEXITCODE = $null
     Write-Log -Message "Calibre update in $CalibreInstaller will be applied to $CalibreFolder" -LogLevel "Info"
