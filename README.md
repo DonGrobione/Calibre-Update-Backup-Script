@@ -53,7 +53,7 @@ This repository contains a PowerShell workflow that:
 - `.gitignore`
 	Git ignore rules for local/runtime artifacts.
 - `LICENSE.md`
-	MIT License file.
+	CC BY-NC-SA 4.0 license file.
 - `README.md`
 	Project documentation.
 
@@ -63,4 +63,4 @@ All files under `Legacy/` are retained for reference and migration history. Use 
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE.md). You are free to use and modify the code as long as you include the original copyright notice and credit the author.
+This project is licensed under the [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](LICENSE.md). You may use, share, and adapt the material for non-commercial purposes, provided you give appropriate credit and distribute any changes under the same license.
