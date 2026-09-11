@@ -4,7 +4,9 @@
     and removes old backup sets based on retention.
 
 .DESCRIPTION
-    The script resolves host-specific paths for the Calibre installation and backup location, downloads the current Calibre Portable installer to the TEMP folder,
+    The script installs or updates the StratoHiDriveUtils module (https://github.com/DonGrobione/StratoHiDriveUtils) via git,
+    uses it to resolve the HiDrive sync root and derive the Calibre installation and backup paths,
+    downloads the current Calibre Portable installer to the TEMP folder,
     stops HiDrive to avoid sync/file lock issues during backup and update,
     creates a split 7z backup archive, installs the update, restarts HiDrive,
     and then deletes expired backups.
@@ -12,13 +14,14 @@
 .EXAMPLE
     .\Calibre Update Backup.ps1
 
-    Runs the full backup-update-cleanup workflow with host-specific path resolution.
+    Runs the full backup-update-cleanup workflow with automatic HiDrive path resolution.
 
 .NOTES
-    Version: 1.0.1
-    Updated: 2026-04-16
+    Version: 2.0.0
+    Updated: 2026-09-11
     Mail: dongrobione@proton.me
     Latest version: https://github.com/DonGrobione/Calibre-Update-Backup-Script
+    Requires: git in PATH, StratoHiDriveUtils module (https://github.com/DonGrobione/StratoHiDriveUtils)
 
     Log events should look like this:
     Write-Log -Message "This is an info level message." -LogLevel "Info"
@@ -56,27 +59,63 @@ function Write-Log {
 
     Add-Content -Path $LogPath -Value $LogMessage
 }
-function Set-CalibreBackupPath {
+function Install-StratoHiDriveUtilsModule {
     <#
-    Function that will change CalibreBackupPath depending on the hostname.
-    Change env:COMPUTERNAME to the hostname of your host and CalibreBackup to the path where the backup will be saved.
+    Ensures the StratoHiDriveUtils module (https://github.com/DonGrobione/StratoHiDriveUtils) is installed via git clone.
+    If already installed, checks GitHub for a newer version and pulls it if available. Imports the module afterwards.
     #>
-    $script:CalibreBackupPath = $null
-    if ($env:COMPUTERNAME -match "DONGROBIONE-PC") {
-        $script:CalibreBackupPath = "D:\HiDrive\Backup\Calibre\"
-        Write-Log -Message "Calibre backups path was set to $script:CalibreBackupPath" -LogLevel "Info"
-    }
-    elseif ($env:COMPUTERNAME -match "DESKTOP-GS7HB29") {
-        $script:CalibreBackupPath = "E:\HiDrive\Backup\Calibre\"
-        Write-Log -Message "Calibre backups path was set to $script:CalibreBackupPath" -LogLevel "Info"
-    }
-    else {
-        Write-Log -Message "Hostname $env:COMPUTERNAME not configured. CalibreBackupPath not set." -LogLevel "Error"
-        Start-Sleep -Seconds 5
+    $ModuleName = "StratoHiDriveUtils"
+    $ModuleRepo = "https://github.com/DonGrobione/StratoHiDriveUtils.git"
+    $ModulePath = Join-Path -Path ($env:PSModulePath -split ';')[0] -ChildPath $ModuleName
+
+    if (-not (Get-Command -Name git -ErrorAction SilentlyContinue)) {
+        Write-Log -Message "git was not found. Cannot install or update $ModuleName module." -LogLevel "Error"
         exit 1
     }
 
-    # Check if $script:CalibreBackupPath was set correctly
+    if (-not (Test-Path -Path (Join-Path -Path $ModulePath -ChildPath "$ModuleName.psd1"))) {
+        Write-Log -Message "$ModuleName module not found at $ModulePath. Cloning from $ModuleRepo." -LogLevel "Info"
+        New-Item -ItemType Directory -Path $ModulePath -Force | Out-Null
+        git clone --quiet $ModuleRepo $ModulePath 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            Write-Log -Message "Failed to clone $ModuleName module from $ModuleRepo." -LogLevel "Error"
+            exit 1
+        }
+        Write-Log -Message "$ModuleName module installed successfully." -LogLevel "Info"
+    }
+    else {
+        Write-Log -Message "$ModuleName module found at $ModulePath. Checking GitHub for a newer version." -LogLevel "Info"
+        git -C $ModulePath fetch --quiet 2>&1 | Out-Null
+        $LocalCommit = git -C $ModulePath rev-parse HEAD
+        $RemoteCommit = git -C $ModulePath rev-parse '@{u}'
+        if ($LocalCommit -ne $RemoteCommit) {
+            Write-Log -Message "A newer version of $ModuleName is available on GitHub. Pulling update." -LogLevel "Info"
+            git -C $ModulePath pull --quiet 2>&1 | Out-Null
+            Remove-Module -Name $ModuleName -Force -ErrorAction SilentlyContinue
+            Write-Log -Message "$ModuleName module updated successfully." -LogLevel "Info"
+        }
+        else {
+            Write-Log -Message "$ModuleName module is already up to date." -LogLevel "Info"
+        }
+    }
+
+    Import-Module -Name $ModuleName -Force -ErrorAction Stop
+    Write-Log -Message "$ModuleName module imported." -LogLevel "Info"
+}
+
+function Set-CalibreBackupPath {
+    <#
+    Determines CalibreBackupPath from the HiDrive sync root (via Get-HiDriveSyncRoot) instead of hostname matching.
+    #>
+    $HiDriveSyncRoot = Get-HiDriveSyncRoot
+    if (-not $HiDriveSyncRoot) {
+        Write-Log -Message "Could not determine HiDrive sync root. CalibreBackupPath not set." -LogLevel "Error"
+        exit 1
+    }
+
+    $script:CalibreBackupPath = Join-Path -Path $HiDriveSyncRoot -ChildPath "Backup\Calibre"
+    Write-Log -Message "Calibre backups path was set to $script:CalibreBackupPath" -LogLevel "Info"
+
     if (Test-Path -Path $script:CalibreBackupPath -PathType Container) {
         Write-Log -Message "$script:CalibreBackupPath was verified." -LogLevel "Info"
     } else {
@@ -87,25 +126,17 @@ function Set-CalibreBackupPath {
 
 function Set-CalibreFolderPath {
     <#
-    Function that will change CalibreFolder depending on the hostname.
-    Change env:COMPUTERNAME to the hostname of your host and CalibreFolder to the path where the backup will be saved.
+    Determines CalibreFolder from the HiDrive sync root (via Get-HiDriveSyncRoot) instead of hostname matching.
     #>
-    $script:CalibreFolder = $null
-    if ($env:COMPUTERNAME -match "DONGROBIONE-PC") {
-        $script:CalibreFolder = "D:\HiDrive\PortableApps\Calibre Portable"
-        Write-Log -Message "Calibre portable path was set to $script:CalibreFolder" -LogLevel "Info"
-    }
-    elseif ($env:COMPUTERNAME -match "DESKTOP-GS7HB29") {
-        $script:CalibreFolder = "E:\HiDrive\PortableApps\Calibre Portable"
-        Write-Log -Message "Calibre portable path was set to $script:CalibreFolder" -LogLevel "Info"
-    }
-    else {
-        Write-Log -Message "Hostname $env:COMPUTERNAME not configured. CalibreBackupPath not set." -LogLevel "Error"
-        Start-Sleep -Seconds 5
+    $HiDriveSyncRoot = Get-HiDriveSyncRoot
+    if (-not $HiDriveSyncRoot) {
+        Write-Log -Message "Could not determine HiDrive sync root. CalibreFolder not set." -LogLevel "Error"
         exit 1
     }
 
-    # Check if $script:CalibreFolder was set correctly
+    $script:CalibreFolder = Join-Path -Path $HiDriveSyncRoot -ChildPath "PortableApps\Calibre Portable"
+    Write-Log -Message "Calibre portable path was set to $script:CalibreFolder" -LogLevel "Info"
+
     if (Test-Path -Path $script:CalibreFolder -PathType Container) {
         Write-Log -Message "$script:CalibreFolder was verified." -LogLevel "Info"
     } else {
@@ -208,66 +239,12 @@ function Remove-ExpiredBackups {
     }
 }
 
-function Start-HiDrive {
-    # Define potential HiDrive installation paths
-    $HiDrivePotentialPaths = @(
-        "${env:ProgramFiles}\STRATO\HiDrive\HiDrive.App.exe",
-        "${env:ProgramFiles(x86)}\STRATO\HiDrive\HiDrive.App.exe",
-        "${env:LocalAppData}\STRATO\HiDrive\HiDrive.App.exe"
-    )
-
-    # Initialize $HiDrivePath variable
-    $HiDrivePath = $null
-
-    # Check each potential HiDrive path and define HiDrivePath
-    Write-Log -Message "Checking for HiDrive installation." -LogLevel "Info"
-    foreach ($path in $HiDrivePotentialPaths) {
-        if (Test-Path $path) {
-            $HiDrivePath = $path
-            Write-Log -Message "HiDrive found in $HiDrivePath" -LogLevel "Info"
-            break
-        }
-    }
-
-    # Check if HiDrivePath was found and start HiDrive
-    if ($HiDrivePath) {
-        Write-Log -Message "Starting HiDrive in $HiDrivePath" -LogLevel "Info"
-        Start-Process -FilePath $HiDrivePath
-    } else {
-        Write-Log -Message "HiDrive not found on this system. Skipping start." -LogLevel "Error"  # Handling case where no HiDrive path is found
-    }
-}
-
-function Stop-HiDrive {
-    # Check if the HiDrive process is running and stop it to prevent sync errors
-    $process = Get-Process -Name "HiDrive.App" -ErrorAction SilentlyContinue
-    if ($process) {
-        # If the process is running, stop it
-        Write-Log -Message "HiDrive process is running. Stopping." -LogLevel "Info"
-        Stop-Process -Name $process.Name -Force
-
-        # Check every second if the process has stopped
-        while ($true) {
-            Start-Sleep -Seconds 1
-            $process = Get-Process -Name "HiDrive.App" -ErrorAction SilentlyContinue
-
-            if (-not $process) {
-                Write-Log -Message "HiDrive process has been successfully stopped. Proceeding with the script." -LogLevel "Info"
-                break
-            } else {
-                Write-Log -Message "Waiting for HiDrive to stop." -LogLevel "Info"
-            }
-        }
-    } else {
-        # If the process is not running, proceed with the rest of the script
-        Write-Log -Message "HiDrive process is not running. Proceeding with the script." -LogLevel "Info"
-    }
-}
 #EndRegion
 
 #Region: Main script execution
 try {
     Write-Log -Message "=============== Starting script ===============" -LogLevel "Info"
+    Install-StratoHiDriveUtilsModule
     Set-CalibreBackupPath
     Set-CalibreFolderPath
     Get-CalibreUpdate

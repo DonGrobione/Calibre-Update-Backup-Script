@@ -2,13 +2,14 @@
 
 This repository contains a PowerShell workflow that:
 
-1. Resolves Calibre and backup paths based on the current hostname.
-2. Downloads the latest Calibre Portable installer.
-3. Stops STRATO HiDrive to avoid sync/file-lock issues.
-4. Creates a split 7z backup of the Calibre Portable folder.
-5. Installs the update.
-6. Restarts HiDrive.
-7. Deletes old backup sets and keeps only the newest configured amount.
+1. Installs or updates the [StratoHiDriveUtils](https://github.com/DonGrobione/StratoHiDriveUtils) module via git.
+2. Resolves Calibre and backup paths from the HiDrive sync root (via `Get-HiDriveSyncRoot`).
+3. Downloads the latest Calibre Portable installer.
+4. Stops STRATO HiDrive to avoid sync/file-lock issues.
+5. Creates a split 7z backup of the Calibre Portable folder.
+6. Installs the update.
+7. Restarts HiDrive.
+8. Deletes old backup sets and keeps only the newest configured amount.
 
 ## Main Script
 
@@ -18,15 +19,15 @@ This repository contains a PowerShell workflow that:
 ## Requirements
 
 - Windows PowerShell
+- `git` available in `PATH` (used to install/update the StratoHiDriveUtils module)
 - 7-Zip installed at `C:\Program Files\7-Zip\7z.exe` (default path used by script)
-- Access to the target backup and Calibre Portable directories defined in the script
-- STRATO HiDrive client (optional but supported and handled by the script)
+- STRATO HiDrive client, installed and previously synced at least once (so `Get-HiDriveSyncRoot` can resolve the sync root from HiDrive logs)
+- Calibre Portable located at `<HiDriveSyncRoot>\PortableApps\Calibre Portable`, backups written to `<HiDriveSyncRoot>\Backup\Calibre`
 
 ## Configuration Notes
 
-- Host-specific paths are configured in:
-	- `Set-CalibreBackupPath`
-	- `Set-CalibreFolderPath`
+- The [StratoHiDriveUtils](https://github.com/DonGrobione/StratoHiDriveUtils) module is auto-installed via `git clone` on first run and auto-updated (via `git pull`) on subsequent runs when a newer commit exists on GitHub.
+- `Set-CalibreBackupPath` and `Set-CalibreFolderPath` derive their paths from `Get-HiDriveSyncRoot`, no more hostname-specific configuration needed.
 - Retention count is controlled by `$CalibreBackupRetention`.
 - Installer is downloaded to `$env:TEMP\calibre-portable-installer.exe`.
 
