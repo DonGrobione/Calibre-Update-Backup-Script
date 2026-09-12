@@ -11,7 +11,7 @@
     Runs the full backup-update-cleanup workflow with automatic HiDrive path resolution.
 
 .NOTES
-    Version: 2.1.0
+    Version: 2.1.1
     Updated: 2026-09-12
     Mail: dongrobione@proton.me
     Latest version: https://github.com/DonGrobione/Calibre-Update-Backup-Script
@@ -41,6 +41,7 @@ $CalibreBackupRetention = 3
 #EndRegion
 
 #Region: Functions
+# Writes timestamped messages to the script log.
 function Write-Log {
     param(
         [Parameter(Mandatory = $true)]
@@ -54,10 +55,8 @@ function Write-Log {
     Add-Content -Path $LogPath -Value $LogMessage
 }
 
+# Imports StratoHiDriveUtils, checks for an available update, and keeps the currently loaded commands usable on a non-critical update failure.
 function Initialize-StratoHiDriveUtils {
-    <#
-    Imports the StratoHiDriveUtils module (https://github.com/DonGrobione/StratoHiDriveUtils) and checks for updates using Update-StratoHiDriveUtils.
-    #>
     $ModuleName = "StratoHiDriveUtils"
 
     if (-not (Get-Module -ListAvailable -Name $ModuleName)) {
@@ -91,10 +90,8 @@ function Initialize-StratoHiDriveUtils {
     }
 }
 
+# Derives the Calibre backup directory from the HiDrive sync root and creates it when necessary.
 function Set-CalibreBackupPath {
-    <#
-    Determines CalibreBackupPath from the HiDrive sync root (via Get-HiDriveSyncRoot) instead of hostname matching.
-    #>
     $HiDriveSyncRoot = Get-HiDriveSyncRoot
     if (-not $HiDriveSyncRoot) {
         Write-Log -Message "Could not determine HiDrive sync root. CalibreBackupPath not set." -LogLevel "Error"
@@ -117,10 +114,8 @@ function Set-CalibreBackupPath {
     }
 }
 
+# Derives and validates the Calibre Portable directory from the HiDrive sync root.
 function Set-CalibreFolderPath {
-    <#
-    Determines CalibreFolder from the HiDrive sync root (via Get-HiDriveSyncRoot) instead of hostname matching.
-    #>
     $HiDriveSyncRoot = Get-HiDriveSyncRoot
     if (-not $HiDriveSyncRoot) {
         Write-Log -Message "Could not determine HiDrive sync root. CalibreFolder not set." -LogLevel "Error"
@@ -138,6 +133,7 @@ function Set-CalibreFolderPath {
     }
 }
 
+# Downloads the current Calibre Portable installer after removing a stale installer from the temporary directory.
 function Get-CalibreUpdate {
     # Verify if the update file from a previous update still exists and delete it if it does
     if (Test-Path -Path $CalibreInstaller -PathType Leaf) {
@@ -162,16 +158,11 @@ function Get-CalibreUpdate {
     }
 }
 
+# Creates a split, compressed 7-Zip backup of the Calibre Portable directory.
 function New-CalibreBackup {
     if (Test-Path -Path $7zipPath -PathType Leaf) {
         Write-Log -Message "7zip found at $7zipPath, starting backup." -LogLevel "Info"
-        <#
-        https://7ziphelp.com/7zip-command-line
-        a - create archive
-        mx9 - maximum compression
-        v1g - volume / file split after 1 GB
-        bsp - verbose activity (progress) stream 
-        #>
+        # 7-Zip options: a creates an archive, mx9 selects maximum compression, v1g creates 1 GB volumes, and bsp2 sends progress to standard error.
         $backupProcess = Start-Process -FilePath "$7zipPath" -ArgumentList "a -mx9 -bsp2 -v1g `"$CalibreBackupPath\CalibrePortableBackup_$Date`" `"$CalibreFolder`"" -Wait -NoNewWindow -PassThru
         if ($backupProcess.ExitCode -ne 0 -and $backupProcess.ExitCode -ne 1) {
             throw "7-Zip backup failed with exit code $($backupProcess.ExitCode)."
@@ -184,6 +175,7 @@ function New-CalibreBackup {
     }
 }
 
+# Stops running Calibre processes, applies the downloaded installer, and removes the temporary installer file.
 function Install-CalibreUpdate {
     # Check if the Calibre process is running and stop it to allow the update to be installed
     if (Get-Process -Name "calibre*", "calibre-parallel*", "ebook-viewer*", "ebook-edit*" -ErrorAction SilentlyContinue) {
@@ -207,6 +199,7 @@ function Install-CalibreUpdate {
     }
 }
 
+# Removes complete backup sets that exceed the configured retention count.
 function Remove-ExpiredBackups {
     Write-Log -Message "Cleanup of old backups in $CalibreBackupPath" -LogLevel "Info"
 

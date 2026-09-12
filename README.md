@@ -35,6 +35,9 @@ This repository contains a PowerShell workflow that:
 
 ```text
 .
+|-- .copilot/
+|   |-- project-rules.md
+|   `-- repo-memory.md
 |-- Legacy/
 |   `-- Calibre Update Backup.bat
 |-- Calibre Update Backup.ps1
@@ -45,6 +48,12 @@ This repository contains a PowerShell workflow that:
 
 ## File and Directory Purpose
 
+- `.copilot/`
+	Repository-scoped Copilot rules and concise repository memory.
+- `.copilot/project-rules.md`
+	Canonical project rules for documentation, comments, PowerShell 5.1 compatibility, and validation.
+- `.copilot/repo-memory.md`
+	Persistent, repository-specific facts used by Copilot.
 - `Legacy/`
 	Historical scripts kept for reference only; not actively maintained.
 - `Legacy/Calibre Update Backup.bat`
