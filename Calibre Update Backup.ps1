@@ -1,16 +1,9 @@
 <#
 .SYNOPSIS
-    Backs up Calibre Portable, downloads and installs the latest portable update,
-    and removes old backup sets based on retention.
+    Backs up Calibre Portable, downloads and installs the latest portable update, and removes old backup sets based on retention.
 
 .DESCRIPTION
-    The script imports the StratoHiDriveUtils module (https://github.com/DonGrobione/StratoHiDriveUtils)
-    and checks for updates via Update-StratoHiDriveUtils,
-    uses it to resolve the HiDrive sync root and derive the Calibre installation and backup paths,
-    downloads the current Calibre Portable installer to the TEMP folder,
-    stops HiDrive to avoid sync/file lock issues during backup and update,
-    creates a split 7z backup archive, installs the update, restarts HiDrive,
-    and then deletes expired backups.
+    The script imports the StratoHiDriveUtils module (https://github.com/DonGrobione/StratoHiDriveUtils) and checks for updates via Update-StratoHiDriveUtils, uses it to resolve the HiDrive sync root and derive the Calibre installation and backup paths, downloads the current Calibre Portable installer to the TEMP folder, stops HiDrive to avoid sync/file lock issues during backup and update, creates a split 7z backup archive, installs the update, restarts HiDrive, and then deletes expired backups.
 
 .EXAMPLE
     .\Calibre Update Backup.ps1
@@ -63,8 +56,7 @@ function Write-Log {
 
 function Initialize-StratoHiDriveUtils {
     <#
-    Imports the StratoHiDriveUtils module (https://github.com/DonGrobione/StratoHiDriveUtils)
-    and checks for updates using Update-StratoHiDriveUtils.
+    Imports the StratoHiDriveUtils module (https://github.com/DonGrobione/StratoHiDriveUtils) and checks for updates using Update-StratoHiDriveUtils.
     #>
     $ModuleName = "StratoHiDriveUtils"
 
