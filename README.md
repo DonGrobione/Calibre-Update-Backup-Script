@@ -2,7 +2,7 @@
 
 This repository contains a PowerShell workflow that:
 
-1. Installs or updates the [StratoHiDriveUtils](https://github.com/DonGrobione/StratoHiDriveUtils) module via git.
+1. Imports and checks for updates of the [StratoHiDriveUtils](https://github.com/DonGrobione/StratoHiDriveUtils) module via its built-in self-update function (`Update-StratoHiDriveUtils`).
 2. Resolves Calibre and backup paths from the HiDrive sync root (via `Get-HiDriveSyncRoot`).
 3. Downloads the latest Calibre Portable installer.
 4. Stops STRATO HiDrive to avoid sync/file-lock issues.
@@ -18,15 +18,15 @@ This repository contains a PowerShell workflow that:
 
 ## Requirements
 
-- Windows PowerShell
-- `git` available in `PATH` (used to install/update the StratoHiDriveUtils module)
+- Windows PowerShell 5.1+
+- [StratoHiDriveUtils](https://github.com/DonGrobione/StratoHiDriveUtils) PowerShell module installed in `PSModulePath`
 - 7-Zip installed at `C:\Program Files\7-Zip\7z.exe` (default path used by script)
 - STRATO HiDrive client, installed and previously synced at least once (so `Get-HiDriveSyncRoot` can resolve the sync root from HiDrive logs)
 - Calibre Portable located at `<HiDriveSyncRoot>\PortableApps\Calibre Portable`, backups written to `<HiDriveSyncRoot>\Backup\Calibre`
 
 ## Configuration Notes
 
-- The [StratoHiDriveUtils](https://github.com/DonGrobione/StratoHiDriveUtils) module is auto-installed via `git clone` on first run and auto-updated (via `git pull`) on subsequent runs when a newer commit exists on GitHub.
+- The [StratoHiDriveUtils](https://github.com/DonGrobione/StratoHiDriveUtils) module self-updates via `Update-StratoHiDriveUtils` by checking latest releases on GitHub.
 - `Set-CalibreBackupPath` and `Set-CalibreFolderPath` derive their paths from `Get-HiDriveSyncRoot`, no more hostname-specific configuration needed.
 - Retention count is controlled by `$CalibreBackupRetention`.
 - Installer is downloaded to `$env:TEMP\calibre-portable-installer.exe`.
