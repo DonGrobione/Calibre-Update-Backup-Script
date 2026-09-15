@@ -74,3 +74,7 @@ All files under `Legacy/` are retained for reference and migration history. Use 
 ## License
 
 This project is licensed under the [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](LICENSE.md). You may use, share, and adapt the material for non-commercial purposes, provided you give appropriate credit and distribute any changes under the same license.
+
+## AI Usage
+
+This project was created with support from AI/KI tooling.
