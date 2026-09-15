@@ -1,4 +1,4 @@
-# Copilot Project Rules
+﻿# Copilot Project Rules
 
 ## 1. Documentation
 - Keep README.md current: project structure, purpose of every user-facing file and directory, prerequisites, configuration, and usage.
@@ -46,9 +46,9 @@
 - For standalone scripts (.ps1 without manifest): include a version number in the comment-based help block and keep it current when behavior changes.
 
 ## 8. Copilot Rules And Memory
-- Project rules live only in .copilot/project-rules.md.
-- Repository memory lives only in .copilot/repo-memory.md. No other files are permitted inside .copilot/.
-- Read .copilot/repo-memory.md before starting work on the repository.
+- Project rules live only in .github/copilot-instructions.md.
+- Repository memory lives only in .github/repo-memory.md. No other files are permitted inside .github/.
+- Read .github/repo-memory.md before starting work on the repository.
 
 ## 9. Project-Specific Rules (Calibre-Update-Backup-Script)
 - Every script must import Write-Log.psm1 by using a path based on $PSScriptRoot.

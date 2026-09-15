@@ -5,4 +5,4 @@
 - Keep the only script-level comment-based help block at the first content of the maintained PowerShell script.
 - Every PowerShell function requires a concise English regular comment immediately above its declaration.
 - Keep sentences unwrapped in the README, comment-based help, and regular comments.
-- Canonical project rules and repository memory are limited to `.copilot/project-rules.md` and `.copilot/repo-memory.md`.
+- Canonical project rules and repository memory are limited to `.github\copilot-instructions.md` and `.github\repo-memory.md`.
