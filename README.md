@@ -35,12 +35,10 @@ This repository contains a PowerShell workflow that:
 
 ```text
 .
-|-- .copilot/
-|   |-- project-rules.md
-|   `-- repo-memory.md
 |-- Legacy/
 |   `-- Calibre Update Backup.bat
 |-- Calibre Update Backup.ps1
+|-- CLAUDE.md
 |-- .gitignore
 |-- LICENSE.md
 `-- README.md
@@ -48,22 +46,18 @@ This repository contains a PowerShell workflow that:
 
 ## File and Directory Purpose
 
-- `.copilot/`
-	Repository-scoped Copilot rules and concise repository memory.
-- `.copilot/project-rules.md`
-	Canonical project rules for documentation, comments, PowerShell 5.1 compatibility, and validation.
-- `.copilot/repo-memory.md`
-	Persistent, repository-specific facts used by Copilot.
 - `Legacy/`
 	Historical scripts kept for reference only; not actively maintained.
 - `Legacy/Calibre Update Backup.bat`
 	Older batch-file implementation.
 - `Calibre Update Backup.ps1`
 	Current maintained script.
+- `CLAUDE.md`
+	Project rules, repository memory, and architecture notes for Claude Code.
 - `.gitignore`
 	Git ignore rules for local/runtime artifacts.
 - `LICENSE.md`
-	CC BY-NC-SA 4.0 license file.
+	GNU AGPL v3 license file.
 - `README.md`
 	Project documentation.
 
@@ -73,7 +67,7 @@ All files under `Legacy/` are retained for reference and migration history. Use 
 
 ## License
 
-This project is licensed under the [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](LICENSE.md). You may use, share, and adapt the material for non-commercial purposes, provided you give appropriate credit and distribute any changes under the same license.
+This project is licensed under the [GNU Affero General Public License v3.0](LICENSE.md). You may use, modify, and distribute it, provided that you make the source code of modified versions available under the same license, including when you offer the software to users over a network.
 
 ## AI Usage
 
