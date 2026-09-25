@@ -3,7 +3,7 @@
     Backs up Calibre Portable, downloads and installs the latest portable update, and removes old backup sets based on retention.
 
 .DESCRIPTION
-    The script imports the StratoHiDriveUtils module (https://github.com/DonGrobione/StratoHiDriveUtils) and checks for updates via Update-StratoHiDriveUtils, uses it to resolve the HiDrive sync root and derive the Calibre installation and backup paths, downloads the current Calibre Portable installer to the TEMP folder, stops HiDrive to avoid sync/file lock issues during backup and update, creates a split 7z backup archive, installs the update, restarts HiDrive, and then deletes expired backups.
+    The script imports the DonGrobione.StratoHiDriveUtils module (https://github.com/DonGrobione/StratoHiDriveUtils) and checks for updates via Update-StratoHiDriveUtils, uses it to resolve the HiDrive sync root and derive the Calibre installation and backup paths, downloads the current Calibre Portable installer to the TEMP folder, stops HiDrive to avoid sync/file lock issues during backup and update, creates a split 7z backup archive, installs the update, restarts HiDrive, and then deletes expired backups.
 
 .EXAMPLE
     .\Calibre Update Backup.ps1
@@ -11,11 +11,11 @@
     Runs the full backup-update-cleanup workflow with automatic HiDrive path resolution.
 
 .NOTES
-    Version: 2.1.1
-    Updated: 2026-09-12
+    Version: 2.1.2
+    Updated: 2026-09-25
     Mail: dongrobione@proton.me
     Latest version: https://github.com/DonGrobione/Calibre-Update-Backup-Script
-    Requires: StratoHiDriveUtils module (https://github.com/DonGrobione/StratoHiDriveUtils)
+    Requires: DonGrobione.StratoHiDriveUtils module (https://github.com/DonGrobione/StratoHiDriveUtils)
 
     Log events should look like this:
     Write-Log -Message "This is an info level message." -LogLevel "Info"
@@ -55,9 +55,9 @@ function Write-Log {
     Add-Content -Path $LogPath -Value $LogMessage
 }
 
-# Imports StratoHiDriveUtils, checks for an available update, and keeps the currently loaded commands usable on a non-critical update failure.
+# Imports DonGrobione.StratoHiDriveUtils, checks for an available update, and keeps the currently loaded commands usable on a non-critical update failure.
 function Initialize-StratoHiDriveUtils {
-    $ModuleName = "StratoHiDriveUtils"
+    $ModuleName = "DonGrobione.StratoHiDriveUtils"
 
     if (-not (Get-Module -ListAvailable -Name $ModuleName)) {
         Write-Log -Message "$ModuleName module was not found in PSModulePath. Please install it from https://github.com/DonGrobione/StratoHiDriveUtils" -LogLevel "Error"
