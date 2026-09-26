@@ -1,274 +1,565 @@
+<#PSScriptInfo
+
+.VERSION 2.2.0
+
+.GUID 9860f6ef-700a-42b6-a78b-d0e88895d44b
+
+.AUTHOR DonGrobione
+
+.COMPANYNAME DonGrobione
+
+.COPYRIGHT (c) DonGrobione. Licensed under the GNU AGPL v3.
+
+.TAGS Calibre HiDrive Backup Update 7-Zip Windows PSEdition_Desktop
+
+.LICENSEURI https://github.com/DonGrobione/Calibre-Update-Backup-Script/blob/main/LICENSE.md
+
+.PROJECTURI https://github.com/DonGrobione/Calibre-Update-Backup-Script
+
+.ICONURI
+
+.EXTERNALMODULEDEPENDENCIES DonGrobione.StratoHiDriveUtils, DonGrobione.Logging
+
+.REQUIREDSCRIPTS
+
+.EXTERNALSCRIPTDEPENDENCIES
+
+.RELEASENOTES
+2.2.0: Adds parameters, -WhatIf support, exit codes, logging via DonGrobione.Logging, and automatic installation and update of the required modules. Switches the module self-update to Update-HiDriveUtility. See CHANGELOG.md for details.
+
+.PRIVATEDATA
+
+#>
+
+#Requires -Version 5.1
+
 <#
 .SYNOPSIS
     Backs up Calibre Portable, downloads and installs the latest portable update, and removes old backup sets based on retention.
 
 .DESCRIPTION
-    The script imports the DonGrobione.StratoHiDriveUtils module (https://github.com/DonGrobione/StratoHiDriveUtils) and checks for updates via Update-StratoHiDriveUtils, uses it to resolve the HiDrive sync root and derive the Calibre installation and backup paths, downloads the current Calibre Portable installer to the TEMP folder, stops HiDrive to avoid sync/file lock issues during backup and update, creates a split 7z backup archive, installs the update, restarts HiDrive, and then deletes expired backups.
+    The script first makes the required modules DonGrobione.Logging (https://github.com/DonGrobione/Logging) and DonGrobione.StratoHiDriveUtils (https://github.com/DonGrobione/StratoHiDriveUtils) available.
+    A missing module is installed for the current user with its official installer, and an installed module is updated with its own update command.
+    It resolves the HiDrive sync root, derives the Calibre installation and backup paths from it, and downloads the current Calibre Portable installer to the TEMP folder.
+    It then stops HiDrive to avoid sync and file lock issues, creates a split 7z backup archive, installs the update, restarts HiDrive, and deletes expired backup sets.
+    If a step fails while HiDrive is stopped, HiDrive is restarted before the script exits.
+    Each run writes its own log file to <Documents>\Logs\Calibre-Update-Backup, and the five newest log files are kept.
+
+.PARAMETER CalibreUpdateSource
+    HTTPS URL of the Calibre Portable installer.
+
+.PARAMETER SevenZipPath
+    Full path to 7z.exe.
+
+.PARAMETER CalibreBackupRetention
+    Number of backup sets to keep. Older sets are deleted.
 
 .EXAMPLE
-    .\Calibre Update Backup.ps1
+    & '.\Calibre Update Backup.ps1'
 
-    Runs the full backup-update-cleanup workflow with automatic HiDrive path resolution.
+    Runs the full backup, update, and cleanup workflow with automatic HiDrive path resolution.
+
+.EXAMPLE
+    & '.\Calibre Update Backup.ps1' -WhatIf
+
+    Shows which state-changing steps would run without downloading, stopping HiDrive, backing up, installing, or deleting anything.
+
+.EXAMPLE
+    & '.\Calibre Update Backup.ps1' -CalibreBackupRetention 5
+
+    Runs the workflow and keeps the five newest backup sets.
 
 .NOTES
-    Version: 2.1.2
-    Updated: 2026-09-25
-    Mail: dongrobione@proton.me
     Latest version: https://github.com/DonGrobione/Calibre-Update-Backup-Script
-    Requires: DonGrobione.StratoHiDriveUtils module (https://github.com/DonGrobione/StratoHiDriveUtils)
-
-    Log events should look like this:
-    Write-Log -Message "This is an info level message." -LogLevel "Info"
-    Write-Log -Message "This is an error level message." -LogLevel "Error"
+    Requires: DonGrobione.StratoHiDriveUtils module (https://github.com/DonGrobione/StratoHiDriveUtils), DonGrobione.Logging module (https://github.com/DonGrobione/Logging), 7-Zip, and the STRATO HiDrive client.
+    Exit codes: 0 on success, 1 on failure.
 #>
 
-#Region: Definition of variables, change as needed
+[CmdletBinding(SupportsShouldProcess = $true)]
+param(
+    [Parameter()]
+    [ValidatePattern('^https://')]
+    [string]$CalibreUpdateSource = 'https://calibre-ebook.com/dist/portable',
 
-# Calibre Update URL
-$CalibreUpdateSource = "https://calibre-ebook.com/dist/portable"
+    [Parameter()]
+    [ValidateNotNullOrEmpty()]
+    [string]$SevenZipPath = (Join-Path -Path $env:ProgramFiles -ChildPath '7-Zip\7z.exe'),
 
-# Definition where the the update file will be downloaded to
-$CalibreInstaller = "$env:TEMP\calibre-portable-installer.exe"
-
-# 7zip binary
-$7zipPath = "$env:ProgramFiles\7-Zip\7z.exe"
-
-# Define Date sting in YYYY-MM-DD format for filename
-$Date = (Get-Date).ToString("yyyy-MM-dd_HH-mm")
-
-# Define number of backup datasets to be kept in $CalibreBackup folder and used in Remove-ExpiredBackups. Only the latest n set will be kept.
-$CalibreBackupRetention = 3
-#EndRegion
+    [Parameter()]
+    [ValidateRange(1, 100)]
+    [int]$CalibreBackupRetention = 3
+)
 
 #Region: Functions
-# Writes timestamped messages to the script log.
-function Write-Log {
+# Builds an ErrorRecord for $PSCmdlet.ThrowTerminatingError() without changing any system state.
+function New-ErrorRecord {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Only creates an in-memory object.')]
+    [CmdletBinding()]
+    [OutputType([System.Management.Automation.ErrorRecord])]
     param(
         [Parameter(Mandatory = $true)]
-        [string]$Message,
-        [string]$LogLevel = "Info"
-    )
-    $LogPath = "$PSScriptRoot\Calibre-Backup-Update.log"
-    $TimeStamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $LogMessage = "$TimeStamp [$LogLevel] $Message"
+        [System.Exception]$Exception,
 
-    Add-Content -Path $LogPath -Value $LogMessage
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$ErrorId,
+
+        [Parameter(Mandatory = $true)]
+        [System.Management.Automation.ErrorCategory]$Category,
+
+        [Parameter()]
+        [object]$TargetObject
+    )
+
+    return [System.Management.Automation.ErrorRecord]::new($Exception, $ErrorId, $Category, $TargetObject)
 }
 
-# Imports DonGrobione.StratoHiDriveUtils, checks for an available update, and keeps the currently loaded commands usable on a non-critical update failure.
-function Initialize-StratoHiDriveUtils {
-    $ModuleName = "DonGrobione.StratoHiDriveUtils"
+# Downloads a module's official installer script to the TEMP folder, runs it for the current user, and deletes it afterwards.
+function Install-RequiredModule {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$ModuleName,
 
-    if (-not (Get-Module -ListAvailable -Name $ModuleName)) {
-        Write-Log -Message "$ModuleName module was not found in PSModulePath. Please install it from https://github.com/DonGrobione/StratoHiDriveUtils" -LogLevel "Error"
-        throw "$ModuleName module is not installed."
+        [Parameter(Mandatory = $true)]
+        [ValidatePattern('^https://')]
+        [string]$InstallerUri
+    )
+
+    if (-not $PSCmdlet.ShouldProcess($ModuleName, "Install for the current user with $InstallerUri")) {
+        $exception = [System.InvalidOperationException]::new("$ModuleName module is not installed, and its installation was skipped.")
+        $PSCmdlet.ThrowTerminatingError((New-ErrorRecord -Exception $exception -ErrorId 'ModuleInstallSkipped' -Category NotInstalled -TargetObject $ModuleName))
     }
 
+    $installerPath = Join-Path -Path $env:TEMP -ChildPath ('{0}-Install-{1}.ps1' -f $ModuleName, [guid]::NewGuid().ToString('N'))
     try {
-        Import-Module -Name $ModuleName -ErrorAction Stop
-        Write-Log -Message "$ModuleName module imported successfully." -LogLevel "Info"
-
-        Write-Log -Message "Checking for $ModuleName module updates..." -LogLevel "Info"
-        $updateResult = Update-StratoHiDriveUtils -ErrorAction Stop
-
-        if ($updateResult.Status -eq 'Updated' -or $updateResult.ReloadRequired) {
-            Import-Module -Name $ModuleName -Force -ErrorAction Stop
-            Write-Log -Message "$ModuleName module updated from $($updateResult.LocalVersion) to $($updateResult.RemoteVersion) and reloaded." -LogLevel "Info"
-        }
-        elseif ($updateResult.Status -eq 'UpToDate') {
-            Write-Log -Message "$ModuleName module is up to date (version $($updateResult.LocalVersion))." -LogLevel "Info"
-        }
-        elseif ($updateResult.Status -eq 'UpdateAvailable') {
-            Write-Log -Message "$ModuleName module update available ($($updateResult.LocalVersion) -> $($updateResult.RemoteVersion))." -LogLevel "Info"
-        }
+        Write-Verbose -Message "Downloading $InstallerUri to $installerPath"
+        Start-BitsTransfer -Source $InstallerUri -Destination $installerPath -ErrorAction Stop
+        $null = & $installerPath
     }
     catch {
-        Write-Log -Message "Notice during $ModuleName initialization/update: $($_.Exception.Message)" -LogLevel "Warning"
-        if (-not (Get-Command -Name Get-HiDriveSyncRoot -ErrorAction SilentlyContinue)) {
-            throw
+        $exception = [System.InvalidOperationException]::new("$ModuleName module could not be installed with $InstallerUri. $($_.Exception.Message)", $_.Exception)
+        $PSCmdlet.ThrowTerminatingError((New-ErrorRecord -Exception $exception -ErrorId 'ModuleInstallFailed' -Category NotInstalled -TargetObject $ModuleName))
+    }
+    finally {
+        if (Test-Path -LiteralPath $installerPath -PathType Leaf) {
+            Remove-Item -LiteralPath $installerPath -Force -ErrorAction SilentlyContinue
         }
     }
 }
 
-# Derives the Calibre backup directory from the HiDrive sync root and creates it when necessary.
-function Set-CalibreBackupPath {
-    $HiDriveSyncRoot = Get-HiDriveSyncRoot
-    if (-not $HiDriveSyncRoot) {
-        Write-Log -Message "Could not determine HiDrive sync root. CalibreBackupPath not set." -LogLevel "Error"
-        throw "Could not determine HiDrive sync root."
+# Makes a required module available: installs it when it cannot be imported, otherwise runs its update command and reloads it. Returns a status object for the caller to log, because this runs before logging is available. A failed update is non-fatal as long as the installed version can still be imported.
+function Initialize-RequiredModule {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$ModuleName,
+
+        [Parameter(Mandatory = $true)]
+        [ValidatePattern('^https://')]
+        [string]$InstallerUri,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$UpdateCommand
+    )
+
+    $module = $null
+    try {
+        $module = Import-Module -Name $ModuleName -PassThru -ErrorAction Stop | Select-Object -First 1
+    }
+    catch {
+        Write-Verbose -Message "$ModuleName module could not be imported: $($_.Exception.Message)"
     }
 
-    $script:CalibreBackupPath = Join-Path -Path $HiDriveSyncRoot -ChildPath "Backup\Calibre"
-    Write-Log -Message "Calibre backups path was set to $script:CalibreBackupPath" -LogLevel "Info"
-
-    if (-not (Test-Path -Path $script:CalibreBackupPath -PathType Container)) {
-        Write-Log -Message "The path $script:CalibreBackupPath does not exist. Creating directory." -LogLevel "Info"
-        New-Item -ItemType Directory -Path $script:CalibreBackupPath -Force | Out-Null
-    }
-
-    if (Test-Path -Path $script:CalibreBackupPath -PathType Container) {
-        Write-Log -Message "$script:CalibreBackupPath was verified." -LogLevel "Info"
-    } else {
-        Write-Log -Message "The path $script:CalibreBackupPath does not exist or is not accessible." -LogLevel "Error"
-        throw "The path $script:CalibreBackupPath does not exist or is not accessible."
-    }
-}
-
-# Derives and validates the Calibre Portable directory from the HiDrive sync root.
-function Set-CalibreFolderPath {
-    $HiDriveSyncRoot = Get-HiDriveSyncRoot
-    if (-not $HiDriveSyncRoot) {
-        Write-Log -Message "Could not determine HiDrive sync root. CalibreFolder not set." -LogLevel "Error"
-        throw "Could not determine HiDrive sync root."
-    }
-
-    $script:CalibreFolder = Join-Path -Path $HiDriveSyncRoot -ChildPath "PortableApps\Calibre Portable"
-    Write-Log -Message "Calibre portable path was set to $script:CalibreFolder" -LogLevel "Info"
-
-    if (Test-Path -Path $script:CalibreFolder -PathType Container) {
-        Write-Log -Message "$script:CalibreFolder was verified." -LogLevel "Info"
-    } else {
-        Write-Log -Message "The path $script:CalibreFolder does not exist or is not accessible." -LogLevel "Error"
-        throw "The path $script:CalibreFolder does not exist or is not accessible."
-    }
-}
-
-# Downloads the current Calibre Portable installer after removing a stale installer from the temporary directory.
-function Get-CalibreUpdate {
-    # Verify if the update file from a previous update still exists and delete it if it does
-    if (Test-Path -Path $CalibreInstaller -PathType Leaf) {
-        Write-Log -Message "Calibre update file from previous update found at $CalibreInstaller. Deleting." -LogLevel "Info"
-        Remove-Item -Path $CalibreInstaller -Force
-    }
-    else {
-        Write-Log -Message "No Calibre update file found from a previous download." -LogLevel "Info"
-    }    
-
-    # Attempt to download the file
-    Write-Log -Message "Downloading $CalibreUpdateSource to $CalibreInstaller" -LogLevel "Info"
-    Start-BitsTransfer -Priority Foreground -Source $CalibreUpdateSource -Destination $CalibreInstaller -ErrorAction Stop
-
-    # Verify if the file was downloaded successfully
-    if (Test-Path -Path $CalibreInstaller -PathType Leaf) {
-        Write-Log -Message "Calibre update downloaded successfully to $CalibreInstaller" -LogLevel "Info"
-    }
-    else {
-        Write-Log -Message "Calibre update file not found at $CalibreInstaller after download attempt." -LogLevel "Error"
-        throw "Download failed: Update file is missing."
-    }
-}
-
-# Creates a split, compressed 7-Zip backup of the Calibre Portable directory.
-function New-CalibreBackup {
-    if (Test-Path -Path $7zipPath -PathType Leaf) {
-        Write-Log -Message "7zip found at $7zipPath, starting backup." -LogLevel "Info"
-        # 7-Zip options: a creates an archive, mx9 selects maximum compression, v1g creates 1 GB volumes, and bsp2 sends progress to standard error.
-        $backupProcess = Start-Process -FilePath "$7zipPath" -ArgumentList "a -mx9 -bsp2 -v1g `"$CalibreBackupPath\CalibrePortableBackup_$Date`" `"$CalibreFolder`"" -Wait -NoNewWindow -PassThru
-        if ($backupProcess.ExitCode -ne 0 -and $backupProcess.ExitCode -ne 1) {
-            throw "7-Zip backup failed with exit code $($backupProcess.ExitCode)."
+    if (-not $module) {
+        Install-RequiredModule -ModuleName $ModuleName -InstallerUri $InstallerUri
+        $module = Import-Module -Name $ModuleName -PassThru -ErrorAction Stop | Select-Object -First 1
+        return [pscustomobject]@{
+            ModuleName  = $ModuleName
+            Status      = 'Installed'
+            Version     = $module.Version
+            Message     = "$ModuleName module $($module.Version) was not installed and has been installed."
+            ErrorRecord = $null
         }
-        Write-Log -Message "7-Zip backup finished." -LogLevel "Info"
     }
-    else {
-        Write-Log -Message "7zip not found at $7zipPath. Stopping Script." -LogLevel "Error"
-        throw "7-Zip binary not found at $7zipPath."
+
+    if (-not $PSCmdlet.ShouldProcess($ModuleName, "Update with $UpdateCommand")) {
+        return [pscustomobject]@{
+            ModuleName  = $ModuleName
+            Status      = 'UpdateSkipped'
+            Version     = $module.Version
+            Message     = "$ModuleName module $($module.Version) is installed. The update check was skipped."
+            ErrorRecord = $null
+        }
+    }
+
+    $installedVersion = $module.Version
+    try {
+        $null = & $UpdateCommand -Confirm:$false -ErrorAction Stop
+    }
+    catch {
+        return [pscustomobject]@{
+            ModuleName  = $ModuleName
+            Status      = 'UpdateFailed'
+            Version     = $installedVersion
+            Message     = "$ModuleName module update failed. Continuing with version $installedVersion."
+            ErrorRecord = $_
+        }
+    }
+
+    # Reload so this session uses the newest installed version.
+    $module = Import-Module -Name $ModuleName -Force -PassThru -ErrorAction Stop | Select-Object -First 1
+    if ($module.Version -gt $installedVersion) {
+        return [pscustomobject]@{
+            ModuleName  = $ModuleName
+            Status      = 'Updated'
+            Version     = $module.Version
+            Message     = "$ModuleName module updated from $installedVersion to $($module.Version)."
+            ErrorRecord = $null
+        }
+    }
+    return [pscustomobject]@{
+        ModuleName  = $ModuleName
+        Status      = 'UpToDate'
+        Version     = $module.Version
+        Message     = "$ModuleName module is up to date (version $($module.Version))."
+        ErrorRecord = $null
     }
 }
 
-# Stops running Calibre processes, applies the downloaded installer, and removes the temporary installer file.
-function Install-CalibreUpdate {
-    # Check if the Calibre process is running and stop it to allow the update to be installed
-    if (Get-Process -Name "calibre*", "calibre-parallel*", "ebook-viewer*", "ebook-edit*" -ErrorAction SilentlyContinue) {
-        Write-Log -Message "Calibre process is running. Stopping Calibre before update." -LogLevel "Info"
-        Stop-Process -Name "calibre*", "calibre-parallel*", "ebook-viewer*", "ebook-edit*" -Force -ErrorAction SilentlyContinue
-        Start-Sleep -Seconds 2
+# Returns the Calibre backup directory below the HiDrive sync root and creates it when it does not exist.
+function Initialize-CalibreBackupFolder {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateScript({ Test-Path -LiteralPath $_ -PathType Container })]
+        [string]$HiDriveSyncRoot
+    )
+
+    $backupPath = Join-Path -Path $HiDriveSyncRoot -ChildPath 'Backup\Calibre'
+    Write-Log -Message "Calibre backup path was set to $backupPath"
+
+    if (Test-Path -LiteralPath $backupPath -PathType Container) {
+        Write-Log -Message "$backupPath was verified."
+        return $backupPath
     }
-    else {
-        Write-Log -Message "Calibre process is not running. Proceeding with update." -LogLevel "Info"
+
+    if ($PSCmdlet.ShouldProcess($backupPath, 'Create directory')) {
+        New-Item -ItemType Directory -Path $backupPath -Force -ErrorAction Stop | Out-Null
+        Write-Log -Message "Created backup directory $backupPath"
     }
-    
-    Write-Log -Message "Calibre update in $CalibreInstaller will be applied to $CalibreFolder" -LogLevel "Info"
-    $installProcess = Start-Process -FilePath "$CalibreInstaller" -ArgumentList "`"$CalibreFolder`"" -Wait -PassThru
-    if ($installProcess.ExitCode -ne 0) {
-        Write-Log -Message "Calibre installer exited with code $($installProcess.ExitCode)." -LogLevel "Warning"
-    }
-    
-    if (Test-Path -Path $CalibreInstaller -PathType Leaf) {
-        Write-Log -Message "Deleting update file $CalibreInstaller" -LogLevel "Info"
-        Remove-Item -Path $CalibreInstaller -Force
-    }
+    return $backupPath
 }
 
-# Removes complete backup sets that exceed the configured retention count.
-function Remove-ExpiredBackups {
-    Write-Log -Message "Cleanup of old backups in $CalibreBackupPath" -LogLevel "Info"
+# Returns the Calibre Portable directory below the HiDrive sync root and fails when it does not exist.
+function Get-CalibreFolderPath {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$HiDriveSyncRoot
+    )
 
-    # List all files in $CalibreBackupPath
-    $files = Get-ChildItem -Path $CalibreBackupPath -Filter "CalibrePortableBackup_*.7z.*"
+    $calibreFolder = Join-Path -Path $HiDriveSyncRoot -ChildPath 'PortableApps\Calibre Portable'
+    if (-not (Test-Path -LiteralPath $calibreFolder -PathType Container)) {
+        $exception = [System.IO.DirectoryNotFoundException]::new("The path $calibreFolder does not exist or is not accessible.")
+        $PSCmdlet.ThrowTerminatingError((New-ErrorRecord -Exception $exception -ErrorId 'CalibreFolderNotFound' -Category ObjectNotFound -TargetObject $calibreFolder))
+    }
 
-    if (-not $files) {
-        Write-Log -Message "No backup files found in $CalibreBackupPath." -LogLevel "Info"
+    Write-Log -Message "Calibre Portable path $calibreFolder was verified."
+    return $calibreFolder
+}
+
+# Downloads the Calibre Portable installer after removing a stale installer from a previous run.
+function Save-CalibreUpdate {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidatePattern('^https://')]
+        [string]$SourceUri,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$InstallerPath
+    )
+
+    if (-not $PSCmdlet.ShouldProcess($InstallerPath, "Download $SourceUri")) {
         return
     }
 
-    # Group and sort files by full date and time
-    $groupedFiles = $files | Group-Object {
-        $_.BaseName -replace "CalibrePortableBackup_([0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}).*", '$1'
-    } | Sort-Object {
-        try {
-            [datetime]::ParseExact($_.Name, "yyyy-MM-dd_HH-mm", [System.Globalization.CultureInfo]::InvariantCulture)
-        }
-        catch {
-            [datetime]::MinValue
-        }
+    if (Test-Path -LiteralPath $InstallerPath -PathType Leaf) {
+        Write-Log -Message "Calibre update file from a previous update found at $InstallerPath. Deleting."
+        Remove-Item -LiteralPath $InstallerPath -Force -ErrorAction Stop
     }
 
-    # Delete all files older than the specified number in $CalibreBackupRetention
-    if ($groupedFiles.Count -gt $CalibreBackupRetention) {
-        $groupedFiles | Select-Object -First ($groupedFiles.Count - $CalibreBackupRetention) | ForEach-Object {
-            $_.Group | ForEach-Object {
-                Write-Log -Message "Deleting $($_.FullName)" -LogLevel "Info"
-                Remove-Item -Path $_.FullName -Force
-            }
-        }
-    } else {
-        Write-Log -Message "No old backups to delete. Only $($groupedFiles.Count) backup set(s) found (retention: $CalibreBackupRetention)." -LogLevel "Info"
+    Write-Log -Message "Downloading $SourceUri to $InstallerPath"
+    Start-BitsTransfer -Priority Foreground -Source $SourceUri -Destination $InstallerPath -ErrorAction Stop
+
+    if (-not (Test-Path -LiteralPath $InstallerPath -PathType Leaf)) {
+        $exception = [System.IO.FileNotFoundException]::new("Download failed: the update file $InstallerPath is missing.")
+        $PSCmdlet.ThrowTerminatingError((New-ErrorRecord -Exception $exception -ErrorId 'CalibreInstallerMissing' -Category ObjectNotFound -TargetObject $InstallerPath))
+    }
+    Write-Log -Message "Calibre update downloaded successfully to $InstallerPath"
+}
+
+# Creates a split, maximum-compression 7-Zip backup of the Calibre Portable directory and fails on 7-Zip errors.
+function New-CalibreBackup {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateScript({ Test-Path -LiteralPath $_ -PathType Leaf })]
+        [string]$SevenZipPath,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateScript({ Test-Path -LiteralPath $_ -PathType Container })]
+        [string]$SourcePath,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$BackupPath,
+
+        [Parameter(Mandatory = $true)]
+        [ValidatePattern('^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}$')]
+        [string]$Timestamp
+    )
+
+    $archivePath = Join-Path -Path $BackupPath -ChildPath "CalibrePortableBackup_$Timestamp"
+    if (-not $PSCmdlet.ShouldProcess($archivePath, "Create 7-Zip backup of $SourcePath")) {
+        return
+    }
+
+    Write-Log -Message "Starting 7-Zip backup of $SourcePath to $archivePath"
+    # 7-Zip options: a creates an archive, mx9 selects maximum compression, v1g creates 1 GB volumes, and bsp2 sends progress to standard error.
+    $backupProcess = Start-Process -FilePath $SevenZipPath -ArgumentList "a -mx9 -bsp2 -v1g `"$archivePath`" `"$SourcePath`"" -Wait -NoNewWindow -PassThru -ErrorAction Stop
+
+    # Exit code 1 only reports warnings, for example files that could not be read.
+    if ($backupProcess.ExitCode -ne 0 -and $backupProcess.ExitCode -ne 1) {
+        $exception = [System.InvalidOperationException]::new("7-Zip backup failed with exit code $($backupProcess.ExitCode).")
+        $PSCmdlet.ThrowTerminatingError((New-ErrorRecord -Exception $exception -ErrorId 'SevenZipBackupFailed' -Category InvalidResult -TargetObject $archivePath))
+    }
+    Write-Log -Message "7-Zip backup finished with exit code $($backupProcess.ExitCode)."
+}
+
+# Stops running Calibre processes, runs the downloaded installer against the Calibre Portable directory, and removes the installer afterwards.
+function Install-CalibreUpdate {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$InstallerPath,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateScript({ Test-Path -LiteralPath $_ -PathType Container })]
+        [string]$CalibreFolder
+    )
+
+    if (-not $PSCmdlet.ShouldProcess($CalibreFolder, "Install Calibre update from $InstallerPath")) {
+        return
+    }
+
+    if (-not (Test-Path -LiteralPath $InstallerPath -PathType Leaf)) {
+        $exception = [System.IO.FileNotFoundException]::new("Calibre installer $InstallerPath was not found.")
+        $PSCmdlet.ThrowTerminatingError((New-ErrorRecord -Exception $exception -ErrorId 'CalibreInstallerNotFound' -Category ObjectNotFound -TargetObject $InstallerPath))
+    }
+
+    $calibreProcesses = Get-Process -Name 'calibre*', 'calibre-parallel*', 'ebook-viewer*', 'ebook-edit*' -ErrorAction SilentlyContinue
+    if ($calibreProcesses) {
+        Write-Log -Message 'Calibre process is running. Stopping Calibre before update.'
+        $calibreProcesses | Stop-Process -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 2
+    }
+    else {
+        Write-Log -Message 'Calibre process is not running. Proceeding with update.'
+    }
+
+    Write-Log -Message "Calibre update in $InstallerPath will be applied to $CalibreFolder"
+    $installProcess = Start-Process -FilePath $InstallerPath -ArgumentList "`"$CalibreFolder`"" -Wait -PassThru -ErrorAction Stop
+    if ($installProcess.ExitCode -ne 0) {
+        Write-Log -Message "Calibre installer exited with code $($installProcess.ExitCode)." -Level WARN
+    }
+
+    if (Test-Path -LiteralPath $InstallerPath -PathType Leaf) {
+        Write-Log -Message "Deleting update file $InstallerPath"
+        Remove-Item -LiteralPath $InstallerPath -Force -ErrorAction Stop
     }
 }
 
+# Deletes complete backup sets that exceed the retention count and keeps the newest sets.
+function Remove-ExpiredBackup {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$BackupPath,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateRange(1, 100)]
+        [int]$Retention
+    )
+
+    Write-Log -Message "Cleanup of old backups in $BackupPath"
+    if (-not (Test-Path -LiteralPath $BackupPath -PathType Container)) {
+        Write-Log -Message "Backup path $BackupPath does not exist. Nothing to clean up."
+        return
+    }
+
+    $files = @(Get-ChildItem -LiteralPath $BackupPath -Filter 'CalibrePortableBackup_*.7z.*' -File -ErrorAction Stop)
+    if ($files.Count -eq 0) {
+        Write-Log -Message "No backup files found in $BackupPath."
+        return
+    }
+
+    # Group the split volumes by their timestamp and sort the sets from oldest to newest.
+    $backupSets = @($files | Group-Object -Property {
+            $_.BaseName -replace '^CalibrePortableBackup_(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}).*$', '$1'
+        } | Sort-Object -Property {
+            try {
+                [datetime]::ParseExact($_.Name, 'yyyy-MM-dd_HH-mm', [System.Globalization.CultureInfo]::InvariantCulture)
+            }
+            catch {
+                [datetime]::MinValue
+            }
+        })
+
+    if ($backupSets.Count -le $Retention) {
+        Write-Log -Message "No old backups to delete. Only $($backupSets.Count) backup set(s) found (retention: $Retention)."
+        return
+    }
+
+    foreach ($backupSet in ($backupSets | Select-Object -First ($backupSets.Count - $Retention))) {
+        foreach ($file in $backupSet.Group) {
+            if ($PSCmdlet.ShouldProcess($file.FullName, 'Delete expired backup volume')) {
+                Write-Log -Message "Deleting $($file.FullName)"
+                Remove-Item -LiteralPath $file.FullName -Force -ErrorAction Stop
+            }
+        }
+    }
+}
+
+# Runs the complete workflow and restarts HiDrive when a step fails while HiDrive is stopped. The installer is downloaded before HiDrive is stopped to keep the offline time short.
+function Invoke-CalibreUpdateBackup {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidatePattern('^https://')]
+        [string]$CalibreUpdateSource,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$SevenZipPath,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateRange(1, 100)]
+        [int]$CalibreBackupRetention
+    )
+
+    if (-not (Test-Path -LiteralPath $SevenZipPath -PathType Leaf)) {
+        $exception = [System.IO.FileNotFoundException]::new("7-Zip binary not found at $SevenZipPath.")
+        $PSCmdlet.ThrowTerminatingError((New-ErrorRecord -Exception $exception -ErrorId 'SevenZipNotFound' -Category ObjectNotFound -TargetObject $SevenZipPath))
+    }
+
+    $hiDriveSyncRoot = Get-HiDriveSyncRoot
+    if (-not $hiDriveSyncRoot) {
+        $exception = [System.InvalidOperationException]::new('Could not determine the HiDrive sync root.')
+        $PSCmdlet.ThrowTerminatingError((New-ErrorRecord -Exception $exception -ErrorId 'HiDriveSyncRootNotFound' -Category ObjectNotFound))
+    }
+
+    $calibreBackupPath = Initialize-CalibreBackupFolder -HiDriveSyncRoot $hiDriveSyncRoot
+    $calibreFolder = Get-CalibreFolderPath -HiDriveSyncRoot $hiDriveSyncRoot
+    $calibreInstaller = Join-Path -Path $env:TEMP -ChildPath 'calibre-portable-installer.exe'
+    $timestamp = (Get-Date).ToString('yyyy-MM-dd_HH-mm')
+
+    Save-CalibreUpdate -SourceUri $CalibreUpdateSource -InstallerPath $calibreInstaller
+
+    $hiDriveStopped = $false
+    try {
+        if ($PSCmdlet.ShouldProcess('STRATO HiDrive client', 'Stop')) {
+            Stop-HiDrive -Confirm:$false -ErrorAction Stop
+            $hiDriveStopped = $true
+        }
+        New-CalibreBackup -SevenZipPath $SevenZipPath -SourcePath $calibreFolder -BackupPath $calibreBackupPath -Timestamp $timestamp
+        Install-CalibreUpdate -InstallerPath $calibreInstaller -CalibreFolder $calibreFolder
+        if ($hiDriveStopped) {
+            Start-HiDrive -Confirm:$false -ErrorAction Stop
+            $hiDriveStopped = $false
+        }
+    }
+    finally {
+        if ($hiDriveStopped) {
+            Write-Log -Message 'Restarting HiDrive after interruption or failure...'
+            try {
+                Start-HiDrive -Confirm:$false -ErrorAction Stop
+                Write-Log -Message 'HiDrive restarted successfully.'
+            }
+            catch {
+                Write-Log -Message 'Failed to restart HiDrive.' -Level ERROR -ErrorRecord $_
+            }
+        }
+    }
+
+    Remove-ExpiredBackup -BackupPath $calibreBackupPath -Retention $CalibreBackupRetention
+}
 #EndRegion
 
 #Region: Main script execution
-$hiDriveStopped = $false
+# Stop here when the script is dot-sourced, for example by the Pester tests, so that only the functions are loaded.
+if ($MyInvocation.InvocationName -eq '.') {
+    return
+}
+
+# Required modules with their official installers and update commands. DonGrobione.Logging comes first because an update reloads it and must happen before Start-Log.
+$requiredModules = @(
+    @{
+        ModuleName    = 'DonGrobione.Logging'
+        InstallerUri  = 'https://raw.githubusercontent.com/DonGrobione/Logging/main/Install.ps1'
+        UpdateCommand = 'Update-DonGrobioneLogging'
+    }
+    @{
+        ModuleName    = 'DonGrobione.StratoHiDriveUtils'
+        InstallerUri  = 'https://raw.githubusercontent.com/DonGrobione/StratoHiDriveUtils/main/Install-StratoHiDriveUtils.ps1'
+        UpdateCommand = 'Update-HiDriveUtility'
+    }
+)
+
+# Logging is not available until the modules are ready, so a failure here is only printed to the terminal.
 try {
-    Write-Log -Message "=============== Starting script ===============" -LogLevel "Info"
-    Initialize-StratoHiDriveUtils
-    Set-CalibreBackupPath
-    Set-CalibreFolderPath
-    Get-CalibreUpdate
-    Stop-HiDrive
-    $hiDriveStopped = $true
-    New-CalibreBackup
-    Install-CalibreUpdate
-    Start-HiDrive
-    $hiDriveStopped = $false
-    Remove-ExpiredBackups
-    Write-Log -Message "=============== Script completed ===============" -LogLevel "Info"
+    $moduleStatuses = @(foreach ($requiredModule in $requiredModules) {
+            Initialize-RequiredModule @requiredModule
+        })
 }
 catch {
-    Write-Log -Message "Error encountered: $($_.Exception.Message)" -LogLevel "Error"
-    Write-Log -Message "StackTrace: $($_.Exception.StackTrace)" -LogLevel "Error"
+    Write-Error -ErrorRecord $_ -ErrorAction Continue
+    exit 1
 }
-finally {
-    if ($hiDriveStopped) {
-        Write-Log -Message "Restarting HiDrive after interruption/failure..." -LogLevel "Info"
-        try {
-            Start-HiDrive
-            Write-Log -Message "HiDrive restarted successfully." -LogLevel "Info"
+
+Start-Log -LogDirectory 'Calibre-Update-Backup'
+$exitCode = 0
+try {
+    Write-Log -Message '=============== Starting script ==============='
+    foreach ($moduleStatus in $moduleStatuses) {
+        if ($moduleStatus.ErrorRecord) {
+            Write-Log -Message $moduleStatus.Message -Level WARN -ErrorRecord $moduleStatus.ErrorRecord
         }
-        catch {
-            Write-Log -Message "Failed to restart HiDrive: $($_.Exception.Message)" -LogLevel "Error"
+        else {
+            Write-Log -Message $moduleStatus.Message
         }
     }
+    Invoke-CalibreUpdateBackup -CalibreUpdateSource $CalibreUpdateSource -SevenZipPath $SevenZipPath -CalibreBackupRetention $CalibreBackupRetention
+    Write-Log -Message '=============== Script completed ==============='
 }
+catch {
+    Write-Log -Message 'Script aborted.' -Level FATAL -ErrorRecord $_
+    Write-Error -ErrorRecord $_ -ErrorAction Continue
+    $exitCode = 1
+}
+finally {
+    Stop-Log
+}
+exit $exitCode
 #EndRegion
