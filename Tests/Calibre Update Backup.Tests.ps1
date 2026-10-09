@@ -3,7 +3,7 @@
     Pester tests for Calibre Update Backup.ps1.
 
 .DESCRIPTION
-    Dot-sources the script, which loads only its functions, and tests each function in isolation.
+    Loads only the function definitions from the script's syntax tree, so the main region never runs, and tests each function in isolation.
     Every destructive or external call (HiDrive, 7-Zip, downloads, installers, module installation and updates, processes, logging) is mocked, and all files are created in TestDrive.
     Uses Pester v4-compatible syntax so the tests run in Windows PowerShell 5.1 with Pester 3.4 or 4.x.
 #>
@@ -77,7 +77,13 @@ function Start-BitsTransfer {
     }
 }
 
-. (Join-Path -Path $PSScriptRoot -ChildPath '..\Calibre Update Backup.ps1')
+# Loads only the top-level function definitions of the script, because dot-sourcing the script would run the whole workflow.
+$scriptPath = (Resolve-Path -LiteralPath (Join-Path -Path $PSScriptRoot -ChildPath '..\Calibre Update Backup.ps1')).Path
+$scriptAst = [System.Management.Automation.Language.Parser]::ParseFile($scriptPath, [ref]$null, [ref]$null)
+$functionAsts = $scriptAst.FindAll({ param($node) $node -is [System.Management.Automation.Language.FunctionDefinitionAst] }, $false)
+foreach ($functionAst in $functionAsts) {
+    . ([scriptblock]::Create($functionAst.Extent.Text))
+}
 
 Describe 'New-ErrorRecord' {
     It 'builds an ErrorRecord with the given id, category, and target' {
@@ -569,5 +575,59 @@ Describe 'Invoke-CalibreUpdateBackup' {
 
         Assert-MockCalled Stop-HiDrive -Times 0 -Exactly -Scope It
         Assert-MockCalled Start-HiDrive -Times 0 -Exactly -Scope It
+    }
+}
+
+Describe 'Test-ExplorerLaunch' {
+    # Pester 3.x keeps mocks defined in an It block until the end of the enclosing Context, so each case gets its own Context.
+    Context 'Started from Explorer' {
+        It 'returns $true when the parent process is explorer' {
+            Mock Get-CimInstance { [pscustomobject]@{ ParentProcessId = 4242 } }
+            Mock Get-Process { [pscustomobject]@{ ProcessName = 'explorer' } }
+
+            Test-ExplorerLaunch | Should Be $true
+            Assert-MockCalled Get-Process -Times 1 -Exactly -Scope It -ParameterFilter { $Id -eq 4242 }
+        }
+    }
+
+    Context 'Started from a console' {
+        It 'returns $false when the parent process is not explorer' {
+            Mock Get-CimInstance { [pscustomobject]@{ ParentProcessId = 4242 } }
+            Mock Get-Process { [pscustomobject]@{ ProcessName = 'WindowsTerminal' } }
+
+            Test-ExplorerLaunch | Should Be $false
+        }
+    }
+
+    Context 'Parent process unavailable' {
+        It 'returns $false when the parent process has already exited' {
+            Mock Get-CimInstance { [pscustomobject]@{ ParentProcessId = 4242 } }
+            Mock Get-Process { throw 'process not found' }
+
+            Test-ExplorerLaunch | Should Be $false
+        }
+    }
+}
+
+Describe 'Wait-ExplorerConsoleClose' {
+    # Pester 3.x keeps mocks defined in an It block until the end of the enclosing Context, so each case gets its own Context.
+    Context 'Started from Explorer' {
+        It 'waits for Enter' {
+            Mock Test-ExplorerLaunch { $true }
+            Mock Read-Host { '' }
+
+            Wait-ExplorerConsoleClose
+            Assert-MockCalled Read-Host -Times 1 -Exactly -Scope It
+        }
+    }
+
+    Context 'Started from a console' {
+        It 'returns without waiting' {
+            Mock Test-ExplorerLaunch { $false }
+            Mock Read-Host { '' }
+
+            Wait-ExplorerConsoleClose
+            Assert-MockCalled Read-Host -Times 0 -Exactly -Scope It
+        }
     }
 }

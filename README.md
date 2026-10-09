@@ -46,6 +46,9 @@ If a step fails while HiDrive is stopped, the script restarts HiDrive before it 
 
 The script returns exit code 0 on success and 1 on failure, so it can be used from Task Scheduler.
 
+You can also start the script from Windows Explorer with right-click > "Run with PowerShell". If the script fails, the console window stays open until you press Enter, so you can read the error.
+Dot-sourcing the script (`. '.\Calibre Update Backup.ps1'`) also runs the full workflow, but it does not set an exit code, so it does not close your PowerShell session.
+
 ## Configuration
 
 All settings are script parameters with defaults:

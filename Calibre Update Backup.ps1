@@ -1,6 +1,6 @@
 <#PSScriptInfo
 
-.VERSION 2.2.0
+.VERSION 2.3.0
 
 .GUID 9860f6ef-700a-42b6-a78b-d0e88895d44b
 
@@ -25,6 +25,7 @@
 .EXTERNALSCRIPTDEPENDENCIES
 
 .RELEASENOTES
+2.3.0: Runs the full workflow again when the script is dot-sourced, without closing the calling PowerShell session. Keeps the console window open after a failure when the script was started from Windows Explorer. See CHANGELOG.md for details.
 2.2.0: Adds parameters, -WhatIf support, exit codes, logging via DonGrobione.Logging, and automatic installation and update of the required modules. Switches the module self-update to Update-HiDriveUtility. See CHANGELOG.md for details.
 
 .PRIVATEDATA
@@ -72,7 +73,8 @@
 .NOTES
     Latest version: https://github.com/DonGrobione/Calibre-Update-Backup-Script
     Requires: DonGrobione.StratoHiDriveUtils module (https://github.com/DonGrobione/StratoHiDriveUtils), DonGrobione.Logging module (https://github.com/DonGrobione/Logging), 7-Zip, and the STRATO HiDrive client.
-    Exit codes: 0 on success, 1 on failure.
+    Exit codes: 0 on success, 1 on failure. A dot-sourced run does not call exit, so it does not close the calling PowerShell session.
+    When the script was started from Windows Explorer, for example with "Run with PowerShell", it waits for Enter after a failure so the error can be read before the window closes.
 #>
 
 [CmdletBinding(SupportsShouldProcess = $true)]
@@ -505,13 +507,39 @@ function Invoke-CalibreUpdateBackup {
 
     Remove-ExpiredBackup -BackupPath $calibreBackupPath -Retention $CalibreBackupRetention
 }
+
+# Returns $true when the parent process of this PowerShell session is Windows Explorer, for example after "Run with PowerShell", whose console window closes as soon as the script ends. Returns $false when the parent process cannot be determined.
+function Test-ExplorerLaunch {
+    [CmdletBinding()]
+    [OutputType([bool])]
+    param()
+
+    try {
+        $currentProcess = Get-CimInstance -ClassName Win32_Process -Filter "ProcessId = $PID" -ErrorAction Stop
+        $parentProcess = Get-Process -Id $currentProcess.ParentProcessId -ErrorAction Stop
+    }
+    catch {
+        Write-Verbose -Message "The parent process could not be determined: $($_.Exception.Message)"
+        return $false
+    }
+    return $parentProcess.ProcessName -eq 'explorer'
+}
+
+# Waits for Enter when the script was started from Windows Explorer, so the console window stays open and the error can be read. Returns immediately for every other launch, such as a console or Task Scheduler.
+function Wait-ExplorerConsoleClose {
+    [CmdletBinding()]
+    param()
+
+    if (-not (Test-ExplorerLaunch)) {
+        return
+    }
+    $null = Read-Host -Prompt 'The script failed. Press Enter to close this window'
+}
 #EndRegion
 
 #Region: Main script execution
-# Stop here when the script is dot-sourced, for example by the Pester tests, so that only the functions are loaded.
-if ($MyInvocation.InvocationName -eq '.') {
-    return
-}
+# A dot-sourced run must not call exit, because exit would close the calling PowerShell session.
+$isDotSourced = $MyInvocation.InvocationName -eq '.'
 
 # Required modules with their official installers and update commands. DonGrobione.Logging comes first because an update reloads it and must happen before Start-Log.
 $requiredModules = @(
@@ -535,6 +563,10 @@ try {
 }
 catch {
     Write-Error -ErrorRecord $_ -ErrorAction Continue
+    Wait-ExplorerConsoleClose
+    if ($isDotSourced) {
+        return
+    }
     exit 1
 }
 
@@ -560,6 +592,13 @@ catch {
 }
 finally {
     Stop-Log
+}
+
+if ($exitCode -ne 0) {
+    Wait-ExplorerConsoleClose
+}
+if ($isDotSourced) {
+    return
 }
 exit $exitCode
 #EndRegion

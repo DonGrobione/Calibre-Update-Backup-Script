@@ -5,6 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## Calibre Update Backup.ps1
 
+### [2.3.0] - 2026-10-09
+
+#### Added
+- When the script was started from Windows Explorer, for example with "Run with PowerShell", it waits for Enter after a failure, so the error stays readable instead of the console window closing immediately (`Test-ExplorerLaunch`, `Wait-ExplorerConsoleClose`).
+
+#### Changed
+- Dot-sourcing the script (`. '.\Calibre Update Backup.ps1'`) runs the full workflow again, as it did before 2.2.0. A dot-sourced run does not call `exit`, so it does not close the calling PowerShell session.
+- The Pester tests load only the function definitions from the script's syntax tree instead of dot-sourcing the script, so the script no longer needs an early return for the tests.
+
 ### [2.2.0] - 2026-09-26
 
 #### Added
